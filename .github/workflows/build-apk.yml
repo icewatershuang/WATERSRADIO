@@ -1,0 +1,43 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Sync web assets into Android assets
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp index.html hls.min.js android/app/src/main/assets/
+
+      - name: Build Debug APK (auto-signed)
+        uses: gradle/gradle-build-action@v3
+        with:
+          build-root-directory: android
+          gradle-version: 8.9
+          arguments: :app:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: waters-radio-apk
+          path: android/app/build/outputs/apk/debug/*.apk
