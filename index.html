@@ -402,6 +402,173 @@
     .artwork{width:60px;height:60px;font-size:27px}
   }
 </style>
+
+<!-- ===== WATERS VINYL 横版拟物主题 ===== -->
+<style>
+  :root{
+    --bg:#eef0f5; --surface:#f8f9fc; --surface-2:#eceef4; --surface-3:#e0e3ec;
+    --fill:#d5d9e4; --separator:#dde0e9;
+    --label:#2b2f36; --label-2:#3a3f47; --secondary:#7c8394; --tertiary:#a3a9b8;
+    --accent:#3f7ce8; --accent-soft:rgba(63,124,232,.14);
+    --neu:8px 8px 18px rgba(166,177,198,.55), -8px -8px 18px rgba(255,255,255,.95);
+    --neu-sm:4px 4px 10px rgba(166,177,198,.5), -4px -4px 10px rgba(255,255,255,.9);
+    --neu-in:inset 3px 3px 7px rgba(166,177,198,.45), inset -3px -3px 7px rgba(255,255,255,.9);
+  }
+  body{background:linear-gradient(160deg,#f2f4f9 0%,#e9ecf3 100%);color:var(--label)}
+
+  /* ---- 整体横版 Grid ---- */
+  .container{
+    max-width:1280px;display:grid;
+    grid-template-columns:minmax(300px,5fr) 7fr;
+    grid-template-rows:auto minmax(0,1fr);
+    grid-template-areas:"nav nav" "left right";
+    column-gap:28px;padding:0 24px 14px;
+  }
+  .nav{grid-area:nav;margin:0 -24px 10px;border-radius:0 0 18px 18px;
+    background:rgba(238,240,245,.88);border-bottom:1px solid var(--separator)}
+  .nav h1{color:var(--label)}
+  .nav .subtitle{color:var(--secondary)}
+  .nav-icon{background:var(--surface-2);box-shadow:var(--neu-sm);color:var(--label-2)}
+  .nav-icon:hover{background:var(--surface-3)}
+
+  /* ---- 左栏：唱片机 ---- */
+  .lp-left{grid-area:left;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;min-height:0;min-width:0}
+  .now-playing{background:transparent;padding:4px 0;margin:0;border-radius:0;
+    display:flex;flex-direction:column;align-items:center;gap:5px;width:100%}
+  .artwork{display:none!important}
+
+  .vinyl-stage{position:relative;width:min(34vh,250px);aspect-ratio:1/1;margin:2px 0 4px;flex-shrink:0}
+  .vinyl{position:absolute;inset:0;border-radius:50%;
+    background:repeating-radial-gradient(circle at 50% 50%,#0f1013 0 1.5px,#1b1c21 1.5px 3.5px);
+    box-shadow:10px 10px 22px rgba(166,177,198,.6),-10px -10px 22px rgba(255,255,255,.95);
+    display:flex;align-items:center;justify-content:center}
+  .vinyl-label{width:35%;height:35%;border-radius:50%;position:relative;
+    background:radial-gradient(circle at 35% 30%,#74a6f4,#3f7ce8 62%,#2d5fbd);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.28), 0 0 0 3px rgba(0,0,0,.25)}
+  .vinyl-label::after{content:'';position:absolute;left:50%;top:50%;width:10%;height:10%;
+    transform:translate(-50%,-50%);border-radius:50%;background:var(--bg);
+    box-shadow:0 0 0 3px rgba(255,255,255,.4)}
+  .vinyl-spin .vinyl{animation:spin 3.4s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .tonearm{position:absolute;right:-7%;top:-5%;width:52%;height:82%;pointer-events:none;z-index:2}
+  .arm-pivot{position:absolute;right:4%;top:0;width:24%;aspect-ratio:1/1;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fdfdff,#c7ccd7 72%);
+    box-shadow:var(--neu-sm)}
+  .arm-bar{position:absolute;right:13.5%;top:10%;width:6%;height:86%;
+    background:linear-gradient(90deg,#eceef4,#b6bcc8);border-radius:6px;
+    transform-origin:50% 3%;transform:rotate(-26deg);
+    box-shadow:2px 2px 5px rgba(166,177,198,.5);transition:transform .8s var(--ease)}
+  .arm-head{position:absolute;left:17%;bottom:-1%;width:15%;height:10%;
+    background:linear-gradient(180deg,#eef0f5,#c2c7d3);border-radius:4px 4px 7px 7px;
+    transform:rotate(-18deg);box-shadow:2px 2px 4px rgba(166,177,198,.5)}
+  .vinyl-spin .arm-bar{transform:rotate(4deg)}
+
+  .np-name{font-size:clamp(15px,2.6vh,19px);margin:0;color:var(--label);
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .np-status{margin-bottom:0;font-size:11.5px;color:var(--secondary)}
+  .np-repair{font-size:10.5px;min-height:13px}
+  .viz-wrap{width:100%;max-width:290px;height:24px;margin:2px 0 0}
+  canvas.viz{height:24px}
+
+  /* ---- 右栏：控制台 ---- */
+  .lp-right{grid-area:right;display:flex;flex-direction:column;min-height:0;min-width:0}
+  .controls{gap:20px;margin:2px 0 0;flex-shrink:0}
+  .ctrl-btn{background:var(--surface-2);box-shadow:var(--neu-sm);color:var(--label-2)}
+  .ctrl-btn:hover{background:var(--surface-3);transform:scale(1.06)}
+  .ctrl-btn.fav{color:var(--tertiary)}
+  .ctrl-btn.fav.on{color:var(--accent)}
+  .play-btn{background:var(--surface);color:var(--label);box-shadow:var(--neu)}
+  .play-btn:hover{transform:scale(1.04)}
+  .play-btn:active{transform:scale(.94)}
+  .volume-row{margin:8px 0 0;flex-shrink:0}
+  .volume-row svg{color:var(--secondary)}
+  .vol-slider{width:min(300px,36vw);background:var(--fill)}
+  .vol-slider::-webkit-slider-thumb{background:var(--accent);box-shadow:0 2px 6px rgba(63,124,232,.4)}
+  .vol-slider::-moz-range-thumb{background:var(--accent)}
+
+  /* ---- 精选 chips ---- */
+  .featured{padding:8px 0 4px;flex-shrink:0}
+  .featured-chip{background:var(--surface-2);color:var(--label-2);
+    border:1px solid transparent;box-shadow:var(--neu-sm);font-size:12.5px;padding:7px 13px}
+  .featured-chip:active{background:var(--accent-soft)}
+  .featured-chip.now{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(63,124,232,.35)}
+
+  /* ---- Tab 栏 ---- */
+  .tabbar{padding:5px 0;background:transparent;border-bottom:none;gap:8px;flex-shrink:0}
+  .tab{background:var(--surface-2);box-shadow:var(--neu-sm);color:var(--secondary);
+    border-radius:11px;padding:7px 0;font-size:13px}
+  .tab.active{background:var(--accent);color:#fff}
+
+  /* ---- Panels / 列表 ---- */
+  .panels .section{padding:0 2px}
+  .panels .section-head{padding:8px 2px 6px}
+  .section-head h2{font-size:17px;color:var(--label)}
+  .section-head .count{font-size:12px;color:var(--secondary)}
+  .station-list{background:var(--surface);border:1px solid var(--separator);
+    box-shadow:var(--neu-sm);border-radius:14px}
+  .station-item{border-bottom:1px solid var(--separator)}
+  .station-item:hover{background:var(--surface-2)}
+  .station-item:active{background:var(--surface-3)}
+  .station-item.playing{background:var(--accent-soft)}
+  .station-item.playing .st-icon{background:var(--accent)}
+  .st-icon{background:var(--surface-2);color:var(--secondary)}
+  .st-name{color:var(--label)}
+  .st-url{color:var(--tertiary)}
+  .st-fav.on{color:var(--accent)}
+  .st-fav:hover{color:var(--accent);background:var(--accent-soft)}
+  .search-card,.custom-card{background:var(--surface);border:1px solid var(--separator);
+    box-shadow:var(--neu-sm);border-radius:14px}
+  .search-card .hint,.custom-card .hint{color:var(--tertiary)}
+  .ios-input{background:var(--surface-2);color:var(--label);box-shadow:var(--neu-in)}
+  .ios-input::placeholder{color:var(--tertiary)}
+  .ios-input:focus{background:var(--surface)}
+  .ios-select{background-color:var(--surface-2);color:var(--label)}
+  .ios-btn{background:var(--accent)}
+  .ios-btn.secondary{background:var(--surface-3);color:var(--label-2)}
+  .ios-btn.danger{background:rgba(255,69,58,.12);color:#e0362c}
+  .chip{background:var(--surface-2);color:var(--secondary)}
+  .chip:hover{background:var(--surface-3)}
+  .chip.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .empty-state{color:var(--tertiary)}
+
+  /* ---- 设置模态 ---- */
+  .modal-overlay{background:rgba(60,64,75,.45)}
+  .settings-modal{background:var(--bg)}
+  .settings-modal-header{background:rgba(238,240,245,.92);border-bottom:1px solid var(--separator)}
+  .settings-modal-header h2{color:var(--label)}
+  .settings-modal-close{background:var(--surface-2);color:var(--label-2)}
+  .settings-list{background:var(--surface);border-radius:14px}
+  .setting-item{border-bottom:1px solid var(--separator)}
+  .setting-label{color:var(--label)}
+  .status-info{color:var(--secondary)}
+  .status-info b{color:var(--label)}
+  details{background:var(--surface)}
+  details summary{color:var(--secondary)}
+  details summary:active{background:var(--surface-2)}
+  details pre{color:var(--secondary)}
+
+  /* ---- Toast ---- */
+  .toast{background:rgba(255,255,255,.96);color:var(--label);
+    box-shadow:0 8px 32px rgba(120,130,150,.35)}
+  .toast.err{background:rgba(255,86,74,.95);color:#fff}
+  .toast.ok{background:rgba(40,180,110,.95);color:#fff}
+  ::-webkit-scrollbar-thumb{background:var(--fill)}
+
+  /* ---- 竖屏/窄屏退化：上下堆叠 ---- */
+  @media (orientation:portrait),(max-aspect-ratio:1/1){
+    .container{grid-template-columns:1fr;
+      grid-template-rows:auto auto minmax(0,1fr);
+      grid-template-areas:"nav" "left" "right";
+      padding:0 12px 10px;row-gap:2px}
+    .nav{margin:0 -12px 6px}
+    .vinyl-stage{width:min(26vh,190px)}
+    .viz-wrap{max-width:240px}
+    .controls{gap:16px}
+    .vol-slider{width:min(260px,60vw)}
+  }
+</style>
 </head>
 <body>
 
@@ -420,8 +587,13 @@
 
 <div class="container">
 
-  <!-- ===== Now Playing ===== -->
+  <!-- ===== Now Playing（左栏 · 唱片机） ===== -->
+  <div class="lp-left">
   <section class="now-playing" id="nowSection">
+    <div class="vinyl-stage" id="vinylStage">
+      <div class="vinyl"><div class="vinyl-label"></div></div>
+      <div class="tonearm"><div class="arm-pivot"></div><div class="arm-bar"></div><div class="arm-head"></div></div>
+    </div>
     <div class="artwork" id="artwork">📻</div>
     <h2 class="np-name" id="nowName">未播放</h2>
     <div class="np-meta" id="nowMeta">从下方选择电台，或粘贴直播流 URL</div>
@@ -451,6 +623,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
     </div>
   </section>
+  </div><!-- /lp-left -->
+
+  <!-- ===== 右栏 · 控制台 ===== -->
+  <div class="lp-right">
 
   <!-- ===== 精选（一键直达） ===== -->
   <div class="featured" id="featuredChips"></div>
@@ -528,6 +704,7 @@
     </div>
   </section>
   </div><!-- /panels -->
+  </div><!-- /lp-right -->
 </div>
 
 <!-- ===== 设置后台模态弹窗 ===== -->
@@ -2356,7 +2533,7 @@ document.addEventListener('DOMContentLoaded', init);
     '广东音乐之声':'广东音乐之声',
     'CRI 世界华声':'CRI世界华声'
   };
-  var FEATURED = ['WLTW 106.7 Lite FM (New York)','80 后音悦台','广东音乐之声','CRI 世界华声'];
+  var FEATURED = ['WLTW 106.7 Lite FM (New York)','80 后音悦台','广东音乐之声'];
   function stationByName(name){
     var list = (typeof PRESET_STATIONS!=='undefined') ? PRESET_STATIONS : [];
     for(var i=0;i<list.length;i++){
@@ -2393,6 +2570,17 @@ document.addEventListener('DOMContentLoaded', init);
     tabs.forEach(function(t){ t.onclick = function(){ activate(t.getAttribute('data-tab')); }; });
     activate('favSection');
   }
+  function setupVinylSpin(){
+    var st = document.getElementById('status');
+    var stage = document.getElementById('vinylStage');
+    if(!st || !stage || !window.MutationObserver) return;
+    var apply = function(){
+      var on = st.classList.contains('playing') || st.classList.contains('buffering');
+      stage.classList.toggle('vinyl-spin', on);
+    };
+    new MutationObserver(apply).observe(st, {attributes:true, attributeFilter:['class']});
+    apply();
+  }
   function setupFirstStation(){
     var wltw = stationByName('WLTW');
     var last = (typeof LS!=='undefined') ? loadStr(LS.last,'') : '';
@@ -2410,6 +2598,7 @@ document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('DOMContentLoaded', function(){
     renderFeatured();
     setupTabs();
+    setupVinylSpin();
     setupFirstStation();
   });
 })();
