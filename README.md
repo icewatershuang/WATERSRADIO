@@ -1,22 +1,31 @@
-# WATERS RADIO · 单屏精简版
+# WATERS RADIO · 唱片机横版
 
-民谣 / 流行音乐公号「经济上行期之声」配套电台播放器。
+民谣 / 流行音乐公号「经济上行期之声」配套电台播放器。当前阶段以**网页版**为准，读者点开链接即用。
 
-- **网页版**：根目录 `index.html`（可直接用 GitHub Pages 托管，读者点链接即用）。
-- **安卓 APK**：`android/` 原生 WebView 工程，通过 GitHub Actions 自动编译出包。
+## 网页版
 
-## 这个版本做了什么
+- 文件：根目录 `index.html`（配合同目录 `hls.min.js` 使用，离线可解析 HLS）。
+- 托管：GitHub Pages，部署 `main` 分支根目录，访问 `https://icewatershuang.github.io/WATERSRADIO/`。
 
-1. **单屏不滚动 · 苹果播放器简约风**：顶部紧凑 Now Playing + 播放/音量控制，下方「精选」一键直达，底部 Tab（收藏 / 预设 / 全球 / 定制）切换，整页不滚动、各面板内部滚动。
-2. **首播台 = WLTW（106.7 Lite FM，纽约）**：首次打开即定位并（在 APK 内）自动播放 WLTW。
+## 界面设计
+
+参照白胶唱片机参考图重做的**横版拟物风**：
+
+- **左栏 · 唱片机**：CSS 绘制的黑胶唱片（真实纹路）+ 蓝色唱片芯 + 唱针；播放时唱片旋转、唱针落下，暂停即抬起。
+- **右栏 · 控制台**：上一台 / 收藏 / 播放 / 静音 / 下一台 + 音量滑条，下方为精选一键直达与 Tab（收藏 / 预设 / 全球 / 定制）。
+- 配色：奶白底 + 白色卡片配双向柔和阴影（拟物），蓝色 `#3f7ce8` 作点缀。
+- 版式：整页不滚动，唱片尺寸随屏幕高度自适应；竖屏窄机自动退化为上下堆叠。
+
+## 功能
+
+1. **首播台 = WLTW（106.7 Lite FM，纽约）**：首次打开即定位并尝试播放。
    - 主源（HTTPS HLS）：`https://stream.revma.ihrhls.com/zc1477/hls.m3u8?streamid=1477`
    - 备源：`http://stream.revma.ihrhls.com/zc1477`
-   - 两条同名自动合并为多源，主源失效时秒切换备源，不空档。
-3. **精选台（一键直达）**：WLTW · 纽约、80 后音悦台、广东音乐之声、CRI 世界华声。
-   - 注：CRI 音乐台原想用 CRI HIT FM，但其公开流地址（带 session 参数）已失效（HTTP 400）；改用稳定可用的 **CRI 世界华声**（`http://sk.cri.cn/hxfh.m3u8`）。如有更准的 CRI 音乐台可替换。
-4. **完整保留原程序能力**：934+ 预设电台、收藏、全球搜索（radio-browser）、自定义流、多源热备、设置后台（校验/巡检/黑名单/备份恢复/日志）全部不变。仅去除了原文件的腾讯 beacon 外部埋点。
+   - 两条同名自动合并为多源，主源失效时秒切备源，不空档。
+2. **精选台（一键直达，3 个）**：WLTW · 纽约、80 后音悦台、广东音乐之声。
+3. **完整保留原程序能力**：934+ 预设电台、收藏、全球搜索（radio-browser）、自定义流、多源热备、设置后台（校验 / 巡检 / 黑名单 / 备份恢复 / 日志）全部不变；仅去除原文件的腾讯 beacon 外部埋点。
 
-## 本地预览网页版
+## 本地预览
 
 ```bash
 cd waters-radio
@@ -24,38 +33,19 @@ python3 -m http.server 8080
 # 浏览器打开 http://localhost:8080
 ```
 
-## 构建并发布 APK（GitHub Actions 自动出包）
-
-仓库根目录 Push 后，Actions 工作流 `.github/workflows/build-apk.yml` 会：
-
-1. 用 JDK 17 + Android SDK（runner 自带）搭建编译环境；
-2. 把根目录 `index.html` / `hls.min.js` 同步进安卓 `assets/`（单一数据源，网页与 APK 永远一致）；
-3. 用 Gradle 8.9 + AGP 8.5 编译 `assembleDebug`，产出自动签名的调试 APK；
-4. 在 Actions 页面的 Artifacts 中下载 `waters-radio-apk` 即可安装分发。
-
-> 调试 APK 可直接安装侧载；若要上架或正式分发，建议在仓库 Secrets 中配置签名密钥并改用 `assembleRelease`。
-
 ## 目录结构
 
 ```
 .
-├── index.html              # 网页版（也是 APK 加载的同一份）
-├── hls.min.js              # 本地 HLS 解析库（离线可用）
-├── android/                # 原生 WebView 安卓工程
-│   ├── build.gradle
-│   ├── settings.gradle
-│   └── app/
-│       ├── build.gradle
-│       └── src/main/
-│           ├── AndroidManifest.xml
-│           ├── java/com/waters/radio/MainActivity.java
-│           ├── res/values/styles.xml
-│           ├── res/drawable/ic_launcher.xml
-│           └── res/xml/network_security_config.xml
-└── .github/workflows/build-apk.yml
+├── index.html     # 网页版（唯一数据源）
+├── hls.min.js     # 本地 HLS 解析库（离线可用）
+├── README.md
+└── .nojekyll      # 让 Pages 原样服务所有文件
 ```
 
 ## 已知限制
 
-- 安卓端用 WebView 承载音频：前台/后台多数情况可继续播放，但系统内存紧张时可能被回收导致断流（如需「锁屏/熄屏稳定后台播放」，可后续升级为前台 Service + ExoPlayer 直连流地址方案）。
-- 网页版受浏览器自动播放策略限制，首次打开会显示「点击播放 WLTW ▶」，点一下即播（APK 内已放开自动播放）。
+- 网页版受浏览器自动播放策略限制，首次打开会显示「点击播放 WLTW ▶」，点一下即播。
+- 数据（收藏、音量、黑名单等）保存在浏览器本机 localStorage，换设备前请在设置里「备份」。
+
+> APK 版本：工程已在本机验证可编译出包（`builds/unzipped/app-debug.apk`）。按当前安排先暂停 APK，待网页版定型后再从最终 `index.html` 重新打包发布。
