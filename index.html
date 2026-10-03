@@ -1146,7 +1146,8 @@ const FULL_PRESET_STATIONS = [{"name":"WLTW 106.7 Lite FM (New York)","url":"htt
  * 数据源：FULL_PRESET_STATIONS（934 个电台，HTML 末尾注入）
  * 结构：[{name, url}]
  * 同名电台自动合并 sources 数组
- * 首次启动默认播放 "CRI 环球资讯广播"
+ * 默认收藏三台：WLTW 106.7 Lite FM（纽约） / 80后音悦台 / 广东音乐之声
+ * 首播台：WLTW（见 AUTOPLAY_BOOT）
  */
 
 /* 扁平化获取所有电台（从完整数据集展开，同名合并多源） */
@@ -1170,8 +1171,8 @@ const PRESET_STATIONS = getStationList().map(s => ({name:s.name, sources:s.sourc
 
 /* ---------- 2. LocalStorage 工具（所有数据保存在本机） ---------- */
 const LS = {
-  fav:'waters_radio.fav.v3',          // 收藏电台 [{name,url,sources?}]（v3：重置为仅环球资讯广播）
-  favInit:'waters_radio.favInit.v3',  // 收藏初始化标记
+  fav:'waters_radio.fav.v3',          // 收藏电台 [{name,url,sources?}]（键名保留，避免丢掉用户已有数据）
+  favInit:'waters_radio.favInit.v4',  // 收藏初始化标记（v4：默认收藏改为三台预设）
   last:'waters_radio.last.v2',        // 上次播放 {name,url,sources?,time}
   lastCheck:'waters_radio.lastCheck.v2',   // 每周全量校验时间戳
   lastDaily:'waters_radio.lastDaily.v2',   // 每日快速巡检时间戳
@@ -3391,17 +3392,23 @@ function init(){
   bind();
   renderPresets();
 
-  // 收藏夹默认只保留「环球资讯广播」一个电台
-  // 通过 favInit 标记确保只执行一次（不覆盖用户后续手动添加/删除的收藏）
+  // 收藏夹默认预置三台：WLTW 106.7 Lite FM（纽约） / 80后音悦台 / 广东音乐之声
+  // favInit 标记确保只执行一次；并且只在收藏「仍是旧默认（空，或只有环球资讯一台）」时才改写，
+  // 不覆盖用户后来自己加过 / 删过的收藏。
   if(!loadStr(LS.favInit, '')){
-    const hqStation = state.stations.find(s => s.name.includes('环球资迅') || s.name.includes('环球资讯') || s.name.includes('CRI 环球'));
-    const defaultFav = hqStation
-      ? [{ name: hqStation.name, url: hqStation.url, sources: hqStation.sources || [hqStation.url] }]
-      : [];
-    state.favs = defaultFav;
-    saveJSON(LS.fav, defaultFav);
+    const stillDefault = !state.favs.length ||
+      (state.favs.length === 1 && /环球资讯|环球资迅|CRI/.test(state.favs[0].name || ''));
+    if(stillDefault){
+      const wantKeys = ['WLTW', '80后音悦台', '广东音乐之声'];
+      const seeded = wantKeys
+        .map(k => state.stations.find(s => s.name && s.name.indexOf(k) >= 0))
+        .filter(Boolean)
+        .map(s => ({ name: s.name, url: s.url, sources: s.sources || [s.url] }));
+      state.favs = seeded;
+      saveJSON(LS.fav, seeded);
+      log('收藏夹已初始化（默认三台）：' + seeded.map(s => s.name).join(' / '));
+    }
     saveStr(LS.favInit, '1');
-    log('收藏夹已初始化：仅保留 ' + (hqStation ? hqStation.name : '空'));
   }
 
   renderFavs();
@@ -3556,6 +3563,7 @@ document.addEventListener('DOMContentLoaded', init);
     if(s.length <= 12) return s;          // 放得下就原样显示
     var RULES = [
       [/^WLTW.*/i, 'WLTW'],
+      [/^80后音悦台.*/, '80后音悦台'],   // 库里全名是「80后音悦台 河南网络电台·」，快捷键上只留主名
       [/^CNR-(\d+)\s*(.+)$/i, function(m,a,rest){ return 'CNR-'+a+' '+(rest.length>4?rest.slice(0,4):rest); }],
       [/^CRI\s*(.+)$/i, function(m,rest){ return 'CRI '+(rest.length>4?rest.slice(0,4):rest); }]
     ];
