@@ -138,6 +138,9 @@
     font-size:52.224px;font-weight:700;letter-spacing:0;margin:0;
     color:var(--ink);line-height:1;
     text-align:left;
+    /* 标题必须单行：浮雕增强层 ::after 按单行绝对定位（left:0;top:0），
+       一旦换行会与底字错位形成重影，故强制不折行（窄屏由下方媒体查询缩字号保证不溢出） */
+    white-space:nowrap;
     /* 花体手写字体栈：内联的 Waters Script 优先（离线可用），后面逐级回退 */
     font-family:"Waters Script","Segoe Script","Ink Free","Bradley Hand","Brush Script MT",
       "Lucida Handwriting","Snell Roundhand","Apple Chancery","Zapfino",
@@ -850,19 +853,27 @@
     .st-name{font-size:14.5px}
   }
 
-  /* ========== 竖屏：上下堆叠 ========== */
+  /* ========== 竖屏：上下堆叠 + 整页纵向滚动 ========== */
   @media (orientation:portrait){
+    /* 竖屏解锁整页滚动：
+       原来 html/body 与 .container 都是 100dvh + overflow:hidden，
+       第三行（电台库）用 minmax(0,1fr) 会被上面的顶栏+播放面板挤成 0 高，
+       手机竖屏时「搜索 / 收藏 / 全部电台」这些下方内容就永远够不着。
+       这里改成高度自适应、整页纵向滚动，让下方内容随页面一起下拉可见。 */
+    html,body{height:auto;overflow-x:hidden;overflow-y:auto}
+    body{min-height:100vh;min-height:100dvh}
     .container{
+      height:auto;min-height:100vh;min-height:100dvh;overflow:visible;
       grid-template-columns:1fr;
-      grid-template-rows:auto auto minmax(0,1fr);
+      grid-template-rows:auto auto auto;   /* 三行均按内容高度，不再压缩右栏 */
       grid-template-areas:"nav" "left" "right";
       padding:12px 14px 14px;row-gap:12px;column-gap:0;
     }
     /* 竖屏：标题与设置键同排、底部对齐（标题底端 = 圆形设置键底端）
        花体 line-height:1 时，基线以下仍留有约 0.128em 盒内空白，
        故整体下移 0.128em，让「字迹底端」而非「文本框底端」与圆键底端对齐 */
-    .nav-inner{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:end}
-    .brand-inner{max-width:none;padding-left:14px}   /* 16+6 减去花体左空 8px */
+    .nav-inner{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:end;padding:6px 0 14px}
+    .brand-inner{max-width:none;padding-left:14px}   /* 保留原左空，确保墨迹与主显示屏左缘对齐 */
     .brand-text h1{font-size:43.008px;transform:translateY(.128em)}
     .lp-left{align-items:stretch}
     .now-playing{
@@ -884,10 +895,45 @@
     .play-btn svg{width:39px;height:39px}
     .viz-wrap{height:36px}
     canvas.viz{height:36px}
-    .lib-panel{padding:16px;border-radius:22px;flex:1;min-height:0}
+    /* 右栏不再被视口高度压扁：电台库按内容撑开，随整页一起下拉，底部内容一定看得到。
+       列表区给 70dvh 上限——像「收藏」这种几条的列表会完整展开、整页一滚到底；
+       而「全部电台」有近 900 条，若不设上限会把整页撑到六万多像素，故超出部分交给列表内部滚动。 */
+    .lp-right{min-height:0}
+    .lib-panel{padding:16px;border-radius:22px;flex:none;min-height:0}
+    .panels{flex:none;overflow:visible}
+    .panels .section{flex:none;max-height:70vh;max-height:70dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:0}
     .search-row{flex-direction:column}
     .ios-input,.ios-select{width:100%}
     .ios-btn{width:100%}
+  }
+
+  /* ========== 窄屏竖屏：标题再收一档字号 ==========
+     标题花体的固有宽度 ≈ 7.14 × 字号（实测 43.008px → 墨迹 307px），
+     而标题可用宽度 = 视口 − 100（容器左右内边距 28 + 顶栏内边距 0 + 栏间距 12 + 设置键 46 + 品牌左空 14）。
+     所以 43.008px 需要视口 ≥ 407px 才不折行；更窄的机器（360 / 375 / 390）在此按视口线性收字号，
+     除数取 7.6（比实测 7.14 多留约 6% 余量），保证「Waters Radio」永远单行，且不会压到右侧设置键。 */
+  @media (orientation:portrait) and (max-width:420px){
+    .brand-text h1{font-size:calc((100vw - 100px)/7.6)}
+  }
+
+  /* ========== 手机横屏 / 极矮视口：保留左右两栏，但整页可纵向滚动 ==========
+     手机横屏可用高度常常只有 320~520px，装不下「顶栏 + 播放面板 + 电台库」，
+     原来的 height:100dvh + overflow:hidden 会把音量条、快捷收藏、以及电台列表底部整块裁掉且无法到达。
+     此处改为：
+       · 整页纵向滚动，绝不裁切；
+       · 播放面板改用内容高度，音量条 / 快捷收藏完整可见；
+       · 电台库给一个随视口变化的上限（并保底 280px），超出部分仍由列表内部滚动，
+         避免上百个电台把整页撑到几千像素。 */
+  @media (orientation:landscape) and (max-height:620px){
+    html,body{height:auto;overflow-x:hidden;overflow-y:auto}
+    body{min-height:100vh;min-height:100dvh}
+    .container{
+      height:auto;min-height:100vh;min-height:100dvh;overflow:visible;
+      grid-template-rows:auto auto;
+    }
+    .now-playing{height:auto;max-height:none}
+    .lp-right{min-height:280px;max-height:calc(100dvh - 96px)}
+    .lib-panel{min-height:0}
   }
 </style>
 
