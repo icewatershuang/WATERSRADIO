@@ -7,704 +7,1050 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>WATERS RADIO</title>
 <style>
-  /* ===== 设计语言：Apple Music 风格 ===== */
-  :root{
-    --bg:#000000;
-    --surface:#1c1c1e;
-    --surface-2:#2c2c2e;
-    --surface-3:#3a3a3c;
-    --fill:#48484a;
-    --separator:#38383a;
-    --label:#ffffff;
-    --label-2:#ebebf5;
-    --secondary:#98989f;
-    --tertiary:#636366;
-    --accent:#fa233b;          /* Apple Music 红 */
-    --accent-soft:rgba(250,35,59,.18);
-    --blue:#0a84ff;
-    --green:#30d158;
-    --orange:#ff9f0a;
-    --red:#ff453a;
-    --yellow:#ffd60a;
-    --radius:12px;
-    --radius-l:20px;
-    --blur:saturate(180%) blur(30px);
-    --ease:cubic-bezier(.4,0,.2,1);
-  }
+  /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0;
-    background:var(--bg);color:var(--label);
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
-    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
-    min-height:100vh;
-  }
-  a{color:var(--blue);text-decoration:none}
+  html,body{margin:0;padding:0}
   button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   input,select{font:inherit}
-  ::-webkit-scrollbar{width:6px;height:6px}
-  ::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:3px}
+</style>
+
+<!-- ============ WATERS RADIO · 界面层 ============
+  设计依据：
+   · Apple Human Interface Guidelines —— Clarity / Deference / Depth
+   · Apple Music "Now Playing" —— 封面主导，背景由封面色调生成
+   · Dieter Rams《Ten Principles》—— Less, but better；不打扰；低饱和
+  ============================================== -->
+<!-- ============ WATERS RADIO · 界面层 ============
+  设计语言：奶油白拟物（Cream Skeuomorphic）
+   · 机身：暖米白烤漆面板，柔和高光 + 极浅阴影，无廉价渐变
+   · 按键：大而厚实，双色注塑键帽，按下有真实下沉反馈
+   · 排版：细衬线英文标签（致敬老式收音机刻度盘）+ 无衬线中文
+   · Dieter Rams：Less, but better —— 只保留必要的旋钮与键位
+  ============================================== -->
+<style>
+  /* 圆体：Varela Round（仅子集化标题所需字符，4.9KB，内联保证离线可用） */
+  @font-face{
+    font-family:'Varela Round';font-style:normal;font-weight:400;font-display:swap;
+    src:url(data:font/woff2;base64,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) format('woff2');
+  }
+  /* 花体手写：Segoe Script Bold（仅子集化标题字符，13KB，内联保证离线可用） */
+  @font-face{
+    font-family:'Waters Script';font-style:normal;font-weight:700;font-display:swap;
+    src:url(data:font/woff2;base64,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) format('woff2');
+  }
+  :root{
+    --art-hue:30;                 /* 当前电台主色调，由 JS 动态设置 */
+
+    /* ---- 奶油白机身色谱 ---- */
+    --cream-0:#fffdf8;            /* 最亮高光 */
+    --cream-1:#faf6ec;            /* 面板主色 */
+    --cream-2:#f2ece0;            /* 面板暗部 */
+    --cream-3:#e6dfd0;            /* 凹槽 / 缝隙 */
+    --cream-4:#d6cdb9;            /* 更深缝隙 */
+    --line:#cdc3ae;               /* 分隔线 */
+
+    /* ---- 按键色 ---- */
+    --key-top:#fffefa;
+    --key-bot:#f0e9da;
+    --key-edge:#d8cfbb;
+    --key-shadow:#c4b99f;
+
+    /* ---- 文字 ---- */
+    --ink:#4a4238;                /* 主文字（暖褐黑） */
+    --ink-2:#7a7062;              /* 次要文字 */
+    --ink-3:#a89e8c;              /* 弱化文字 */
+
+    /* ---- 液晶屏（琥珀单色，暖而不刺眼） ---- */
+    --lcd-bg:#2f2418;
+    --lcd-glow:#ffb455;
+    --lcd-dim:#6b5030;
+
+    /* ---- 状态色 ---- */
+    --green:#5a9e63;
+    --amber:#d08b3a;
+    --red:#c4564d;
+
+    --r-lg:22px;
+    --r-md:14px;
+    --r-sm:9px;
+    --ease:cubic-bezier(.32,.72,0,1);
+  }
+
+  html,body{height:100%;overflow:hidden}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+  /* 机身背景：暖米白，中央微亮，四角略收 */
+  body{
+    margin:0;padding:0;
+    background:
+      radial-gradient(130% 120% at 50% -10%, var(--cream-0) 0%, var(--cream-1) 42%, var(--cream-2) 100%);
+    color:var(--ink);
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",
+      -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  ::selection{background:rgba(var(--art-hue),0,0,0);background:hsl(var(--art-hue) 40% 80%)}
+
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+  input,select{font:inherit}
+  a{color:var(--ink-2);text-decoration:none}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:var(--cream-4);border-radius:4px;border:2px solid var(--cream-1)}
+  ::-webkit-scrollbar-thumb:hover{background:var(--line)}
   ::-webkit-scrollbar-track{background:transparent}
 
-  /* ===== 顶部导航栏 ===== */
-  .nav{
-    position:sticky;top:0;z-index:100;
-    background:rgba(0,0,0,.72);
-    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-    border-bottom:.5px solid var(--separator);
+  /* ========== 整机外壳 ========== */
+  .container{
+    height:100vh;height:100dvh;max-width:1460px;margin:0 auto;
+    padding:16px 26px 20px;overflow:hidden;
+    display:grid;
+    grid-template-columns:minmax(360px,42%) minmax(0,1fr);
+    grid-template-rows:auto minmax(0,1fr);
+    grid-template-areas:"nav nav" "left right";
+    column-gap:26px;
   }
+
+  /* ========== 顶栏 ========== */
+  .nav{grid-area:nav;background:none;border:none;position:static}
+  /* 顶栏内部镜像整机两栏网格：让 WATERS 落在左栏正上方，
+     再把品牌字包进与 .now-playing 同样宽的居中容器，补上「面板内边距 + 显示屏外框」
+     的缩进，与主显示屏左边缘精确对齐 */
   .nav-inner{
-    max-width:1000px;margin:0 auto;padding:14px 20px;
-    display:flex;align-items:center;justify-content:space-between;
+    max-width:none;padding:6px 2px 14px;
+    display:grid;
+    grid-template-columns:minmax(360px,42%) minmax(0,1fr);
+    column-gap:26px;
+    align-items:end;
   }
-  .nav h1{font-size:20px;font-weight:700;letter-spacing:-.4px;margin:0}
-  .nav .subtitle{font-size:12px;color:var(--secondary);margin-top:1px}
+  .brand{display:flex;align-items:flex-end;justify-content:center;text-align:left;
+    min-width:0}
+  /* 与 .now-playing 等宽居中（470px），保证两者左右边缘一致 */
+  .brand-inner{width:100%;max-width:470px;display:flex;align-items:flex-end;justify-content:flex-start;
+    padding-left:25px;   /* 26+7 减去花体左空 8px，使墨迹与 .screen 左缘对齐 */}
+  .brand-text{display:flex;flex-direction:column;justify-content:flex-end}
+  /* 标题：花体手写（Segoe Script Bold）＋加粗＋凸面雕刻（阳刻浮雕）
+     · 加粗：用描边补粗（脚本字体只有一档粗细），0.04em 随字号缩放
+     · 凸面：上缘受光高光 + 下缘暗面 + 多层落地投影，形成"浮起"的体积感
+     · 增强层（支持 background-clip:text 时）：字面加一道上浅下深的渐变，
+       模拟凸面被顶光照亮的弧度；不支持时回退为纯色+浮雕，依旧成立 */
+  .brand-text h1{
+    position:relative;
+    font-size:52.224px;font-weight:700;letter-spacing:0;margin:0;
+    color:var(--ink);line-height:1;
+    text-align:left;
+    /* 花体手写字体栈：内联的 Waters Script 优先（离线可用），后面逐级回退 */
+    font-family:"Waters Script","Segoe Script","Ink Free","Bradley Hand","Brush Script MT",
+      "Lucida Handwriting","Snell Roundhand","Apple Chancery","Zapfino",
+      "Yuanti SC","STXingkai","KaiTi","PingFang SC","Microsoft YaHei",
+      cursive,serif;
+    font-style:normal;
+    /* 加粗：脚本字体笔画细，用描边补粗（paint-order 让描边只露外缘，不糊字腔） */
+    -webkit-text-stroke:.04em var(--ink);
+    paint-order:stroke fill;
+    stroke-linejoin:round;
+    stroke-linecap:round;
+    /* 凸面雕刻：上缘受光 → 下缘背光 → 底面投影（光源在正上方） */
+    text-shadow:
+      0 -1px 0 rgba(255,255,255,.95),     /* 上缘受光高光 */
+      0 -2px 1px rgba(255,255,255,.5),    /* 高光柔和过渡 */
+      0 1px 0 rgba(40,29,16,.72),         /* 下缘暗面（形成厚度） */
+      0 1px 2px rgba(40,29,16,.4),        /* 暗面过渡 */
+      0 4px 4px rgba(120,100,70,.42),     /* 贴地投影 */
+      0 9px 13px rgba(120,100,70,.26),    /* 中距投影 */
+      0 14px 22px rgba(120,100,70,.14);   /* 远距扩散影 */
+  }
+  /* 增强层：字面渐变（凸面弧度），仅在支持文字裁剪的浏览器生效 */
+  @supports ((-webkit-background-clip:text) or (background-clip:text)){
+    .brand-text h1{
+      color:transparent;
+      -webkit-text-fill-color:transparent;
+      -webkit-text-stroke-color:transparent;   /* 描边改由 ::after 承担 */
+    }
+    .brand-text h1::after{
+      content:attr(data-text);
+      position:absolute;left:0;top:0;
+      white-space:pre;pointer-events:none;
+      /* 上浅下深 = 凸面被上方光源照出的弧度（保持暖褐基调，不发灰） */
+      background:linear-gradient(180deg,#665a45 0%,#4e4539 32%,#372f25 64%,#211a12 100%);
+      -webkit-background-clip:text;background-clip:text;
+      -webkit-text-fill-color:transparent;color:transparent;
+      /* 加粗描边（同样随字号缩放） */
+      -webkit-text-stroke:.04em #241d15;
+      paint-order:stroke fill;
+      stroke-linejoin:round;stroke-linecap:round;
+    }
+  }
+  .brand-text .subtitle{font-size:11px;color:var(--ink-3);margin-top:2px;letter-spacing:.04em}
+
   .nav-icon{
-    width:36px;height:36px;border-radius:50%;
+    width:46px;height:46px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.08);color:var(--label);
-    transition:.2s var(--ease);
+    background:linear-gradient(160deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 var(--key-top) inset,0 -2px 0 var(--key-edge) inset,
+      0 3px 6px rgba(150,133,102,.3);
+    color:var(--ink-2);transition:transform .1s,box-shadow .15s;
   }
-  .nav-icon:hover{background:rgba(255,255,255,.15)}
+  .nav-icon:hover{color:var(--ink)}
+  .nav-icon:active{
+    transform:translateY(2px);
+    box-shadow:0 1px 0 var(--key-edge) inset,0 1px 2px rgba(150,133,102,.28);
+  }
+  .nav-icon svg{width:23px;height:23px}
 
-  .container{max-width:1000px;margin:0 auto;padding:20px 16px 140px}
+  /* ========== 左栏 · 播放面板 ========== */
+  .lp-left{grid-area:left;display:flex;align-items:center;justify-content:center;
+    min-height:0;min-width:0}
 
-  /* ===== Now Playing 大卡片 ===== */
   .now-playing{
-    background:linear-gradient(180deg,#1a1a1c 0%,#0a0a0b 100%);
-    border-radius:var(--radius-l);padding:32px 28px;margin-bottom:24px;
-    text-align:center;position:relative;overflow:hidden;
+    width:100%;max-width:470px;height:100%;max-height:100%;
+    padding:clamp(24px,5vh,44px) 26px 24px;margin:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    gap:clamp(14px,2.4vh,30px);
+    background:linear-gradient(168deg,#fffefa 0%,var(--cream-1) 55%,var(--cream-2) 100%);
+    border-radius:28px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.95) inset,
+      0 0 0 1px rgba(205,195,174,.55),
+      0 26px 52px -18px rgba(140,122,92,.42),
+      0 6px 16px -4px rgba(140,122,92,.2);
   }
+
+  /* 液晶屏：像一个大按钮那样凸起（拟物），内部含唱片 + 台名 + 频谱 */
+  .screen{
+    width:100%;margin:0;flex-shrink:0;position:relative;
+    display:flex;flex-direction:column;gap:0;text-align:left;
+    padding:7px;                         /* 外框厚度 */
+    border-radius:20px;
+    background:linear-gradient(168deg,#fffefa 0%,#f2ead9 52%,#e4dbc8 100%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.98) inset,
+      0 -3px 0 rgba(196,185,159,.55) inset,
+      0 0 0 1px rgba(205,195,174,.85),
+      0 10px 20px -6px rgba(140,122,92,.5),
+      0 3px 7px rgba(140,122,92,.3);
+  }
+  /* 屏面：内嵌凹槽 */
+  .screen-main{
+    display:flex;align-items:center;gap:18px;
+    padding:15px 17px 13px;border-radius:14px;
+    background:linear-gradient(170deg,#3a2c1e,var(--lcd-bg) 45%,#241b12);
+    box-shadow:0 0 0 1px rgba(90,70,45,.7),0 3px 7px rgba(70,55,35,.55) inset;
+    position:relative;overflow:hidden;
+  }
+  .screen-main::after{ /* 屏面玻璃反光 */
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(118deg,rgba(255,255,255,.15) 0%,transparent 44%);
+  }
+
+  /* ===== 屏内电子表时钟：纯 CSS 七段码数码管 ===== */
+  .lcd-clock{
+    flex-shrink:0;align-self:center;
+    display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
+    gap:3px;padding-left:12px;margin-left:auto;
+    border-left:1px solid rgba(255,180,85,.22);
+    position:relative;z-index:1;
+  }
+  /* 数字容器：直接使用文字（与主显示屏台名同款衬线字体） */
+  .lcd-time,.lcd-date{
+    display:flex;align-items:baseline;
+    line-height:1;white-space:nowrap;
+    color:#5cffa0;
+    /* 与主显示屏台名（.np-name）完全一致的字体栈 */
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-variant-numeric:tabular-nums;font-feature-settings:"tnum";
+  }
+  /* 时间：主字号（＝原 27px 的 1.2 倍），加粗 */
+  .lcd-time{ font-size:32.4px;font-weight:800;letter-spacing:.01em; }
+  /* 日期：随主字号同比放大，加粗 */
+  .lcd-date{ font-size:18px;font-weight:800;letter-spacing:.06em; }
+  /* 秒数：更小一号，稍微抬起到上标位置 */
+  .lcd-sec{
+    font-size:14.5px;font-weight:700;
+    margin-left:.1em;opacity:.85;
+    align-self:flex-start;
+    transform:translateY(-.12em);
+  }
+  /* 频谱条：嵌在外框底部凹槽里，与屏同色系（高度＝原 39px 的 1.2 倍） */
+  .viz-wrap{
+    height:46.8px;margin:6px 6px 1px;border-radius:9px;overflow:hidden;
+    background:linear-gradient(180deg,#33261a,#241b12);
+    box-shadow:0 0 0 1px rgba(90,70,45,.55),0 2px 4px rgba(70,55,35,.5) inset;
+    position:relative;
+  }
+  .viz-wrap::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(118deg,rgba(255,255,255,.09) 0%,transparent 46%);
+  }
+  canvas.viz{width:100%;height:46.8px;display:block}
+
+  /* 唱片（封面）：屏内左侧圆盘 */
   .artwork{
-    width:180px;height:180px;border-radius:14px;margin:0 auto 20px;
-    background:linear-gradient(135deg,#fa233b,#ff6b6b 40%,#ff9f0a 80%);
-    box-shadow:0 20px 60px rgba(250,35,59,.3),0 8px 20px rgba(0,0,0,.4);
-    display:none;align-items:center;justify-content:center;
-    font-size:72px;position:relative;
-    transition:transform .4s var(--ease);
+    width:82px;height:82px;border-radius:50%;flex-shrink:0;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Iowan Old Style",Georgia,serif;
+    font-size:33px;font-weight:600;color:var(--lcd-glow);
+    text-shadow:0 0 12px rgba(255,180,85,.75);
+    background:
+      repeating-radial-gradient(circle at 50% 50%,
+        rgba(255,180,85,.11) 0 1.5px, transparent 1.5px 4px),
+      radial-gradient(circle at 50% 50%, hsl(var(--art-hue) 45% 34%) 0%,
+        hsl(var(--art-hue) 38% 17%) 72%);
+    box-shadow:0 0 0 1px rgba(255,180,85,.28),0 0 18px rgba(255,180,85,.16) inset;
+    transition:box-shadow .4s;
   }
-  .artwork.playing{transform:scale(1.02)}
-  .artwork::after{
-    content:'';position:absolute;inset:0;border-radius:14px;
-    background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.15),transparent 50%);
+  /* 播放中：仅加强高光，圆盘保持静止不转动 */
+  .artwork.playing{
+    box-shadow:0 0 0 1px rgba(255,180,85,.5),0 0 26px rgba(255,180,85,.28) inset;
   }
-  .np-name{font-size:24px;font-weight:700;letter-spacing:-.5px;margin:0 0 4px}
-  .np-meta{font-size:6.5px;color:var(--secondary);margin-bottom:16px;word-break:break-all}
-  .np-meta a{color:var(--secondary)}
-  .np-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--secondary);margin-bottom:8px}
-  .np-status .dot{width:7px;height:7px;border-radius:50%;background:var(--tertiary)}
-  .np-status.playing .dot{background:var(--green);box-shadow:0 0 0 4px rgba(48,209,88,.15)}
-  .np-status.buffering .dot{background:var(--orange);animation:pulse 1s infinite}
-  .np-status.error .dot{background:var(--red)}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .np-repair{font-size:12px;color:var(--orange);min-height:16px}
 
-  /* 频谱 */
-  .viz-wrap{margin:12px 0 20px;height:40px}
-  canvas.viz{width:100%;height:40px;display:block}
+  .screen-info{flex:1;min-width:0}
+  .np-name{
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:21px;font-weight:600;letter-spacing:-.2px;
+    color:var(--lcd-glow);margin:0 0 4px;
+    text-shadow:0 0 12px rgba(255,180,85,.4);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .np-meta{
+    font-size:10.5px;color:var(--lcd-dim);margin:0 0 9px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+  }
+  .np-meta a{color:var(--lcd-dim)}
+  .proxy-badge{
+    display:inline-block;vertical-align:middle;
+    font-size:9.5px;letter-spacing:.04em;
+    padding:1px 6px;margin-right:6px;border-radius:5px;
+    color:#1f6b3a;background:#cfe9d8;border:1px solid #9fceb3;
+    font-family:inherit;
+  }
+  .proxy-badge.warn{color:#8a4a12;background:#f7e0c4;border-color:#e2b483}
+  /* https 直连：冷色调，和"代理中转"的绿区分开 */
+  .proxy-badge.ok{color:#14547a;background:#cfe4f2;border-color:#94c0dd}
+  .np-status{display:inline-flex;align-items:center;gap:7px;font-size:11px;
+    color:var(--lcd-dim);letter-spacing:.06em}
+  .np-status .dot{width:7px;height:7px;border-radius:50%;background:var(--lcd-dim);flex-shrink:0}
+  .np-status.playing .dot{background:var(--lcd-glow);box-shadow:0 0 8px var(--lcd-glow)}
+  .np-status.buffering .dot{background:#ffb455;animation:pulse 1s infinite}
+  .np-status.error .dot{background:#ff6a5a}
+  .np-status.playing #statusText{color:var(--lcd-glow)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  .np-repair{font-size:10.5px;color:#ff9c6a;min-height:14px;margin:0}
 
-  /* 播放控制 - Apple Music 风格 */
-  .controls{display:flex;align-items:center;justify-content:center;gap:28px}
+  /* 扬声器格栅：拟物小细节（纯装饰） */
+  .grille{
+    width:100%;display:flex;justify-content:center;align-items:center;gap:9px;
+    margin:0;flex-shrink:0;padding:0 4px;
+  }
+  .grille i{
+    display:block;width:8px;height:8px;border-radius:50%;
+    background:radial-gradient(circle at 36% 32%,#e8e0cf,#bcb098);
+    box-shadow:0 1.5px 2px rgba(120,102,74,.5) inset,0 1px 0 rgba(255,255,255,.9);
+  }
+
+  /* ========== 大按键区（核心） ========== */
+  .controls{
+    display:flex;align-items:center;justify-content:center;
+    gap:34px;margin:0;
+  }
+  /* 通用大键：厚实键帽 + 下沉反馈 */
   .ctrl-btn{
-    width:44px;height:44px;border-radius:50%;
+    width:78px;height:78px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    color:var(--label);transition:.2s var(--ease);
+    color:var(--ink-2);
+    background:linear-gradient(168deg,var(--key-top) 0%,var(--key-bot) 100%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.98) inset,
+      0 -4px 6px rgba(196,185,159,.5) inset,
+      0 0 0 1px rgba(216,207,187,.85),
+      0 7px 14px -3px rgba(140,122,92,.45),
+      0 2px 4px rgba(140,122,92,.25);
+    transition:transform .09s var(--ease),box-shadow .09s var(--ease),color .18s;
   }
-  .ctrl-btn:hover{background:rgba(255,255,255,.1);transform:scale(1.08)}
-  .ctrl-btn:active{transform:scale(.92)}
-  .ctrl-btn svg{width:26px;height:26px}
-  .ctrl-btn.fav{color:var(--tertiary)}
-  .ctrl-btn.fav.on{color:var(--accent)}
-  .play-btn{
-    width:64px;height:64px;border-radius:50%;
-    background:var(--label);color:#000;
-    display:flex;align-items:center;justify-content:center;
-    transition:.2s var(--ease);box-shadow:0 8px 24px rgba(255,255,255,.15);
+  .ctrl-btn:hover{color:var(--ink)}
+  .ctrl-btn:active{
+    transform:translateY(4px);
+    box-shadow:
+      0 2px 5px rgba(196,185,159,.55) inset,
+      0 0 0 1px rgba(216,207,187,.9),
+      0 2px 5px rgba(140,122,92,.22),
+      0 0 0 rgba(0,0,0,0);
   }
-  .play-btn:hover{transform:scale(1.05);box-shadow:0 12px 32px rgba(255,255,255,.2)}
-  .play-btn:active{transform:scale(.95)}
-  .play-btn svg{width:30px;height:30px}
+  .ctrl-btn svg{width:34px;height:34px}
 
-  /* 音量滑块 */
-  .volume-row{
-    display:flex;align-items:center;justify-content:center;gap:10px;
-    margin-top:20px;
+  /* 播放键：更大、跳出面板、微微抬起 */
+  .play-btn{
+    width:112px;height:112px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#3a3128;
+    background:linear-gradient(168deg,#ffffff 0%,#f6f0e4 60%,#eae2d1 100%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,1) inset,
+      0 -5px 8px rgba(196,185,159,.45) inset,
+      0 0 0 1px rgba(216,207,187,.9),
+      0 12px 24px -6px rgba(140,122,92,.5),
+      0 4px 8px rgba(140,122,92,.28);
+    transition:transform .09s var(--ease),box-shadow .09s var(--ease);
   }
-  .volume-row svg{width:18px;height:18px;color:var(--secondary);flex-shrink:0}
+  .play-btn:hover{box-shadow:
+      0 1px 0 rgba(255,255,255,1) inset,
+      0 -5px 8px rgba(196,185,159,.45) inset,
+      0 0 0 1px rgba(216,207,187,.9),
+      0 15px 30px -6px rgba(140,122,92,.55),
+      0 5px 10px rgba(140,122,92,.3)}
+  .play-btn:active{
+    transform:translateY(5px);
+    box-shadow:
+      0 3px 7px rgba(196,185,159,.6) inset,
+      0 0 0 1px rgba(216,207,187,.95),
+      0 3px 6px rgba(140,122,92,.25);
+  }
+  .play-btn svg{width:48px;height:48px}
+
+  /* 音量：旋钮 + 滑轨 */
+  .volume-row{
+    display:flex;align-items:center;gap:16px;width:100%;max-width:360px;
+    margin:0;padding:14px 20px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(230,223,208,.55),rgba(242,236,224,.3));
+    box-shadow:0 2px 6px rgba(150,133,102,.18) inset,0 1px 0 rgba(255,255,255,.85);
+  }
+  .volume-row .mute{
+    width:48px;height:48px;flex-shrink:0;border-radius:50%;color:var(--ink-2);
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -3px 4px rgba(196,185,159,.45) inset,
+      0 0 0 1px rgba(216,207,187,.8),0 4px 9px -2px rgba(140,122,92,.4);
+    transition:transform .09s,box-shadow .09s,color .18s;
+  }
+  .volume-row .mute:hover{color:var(--ink)}
+  .volume-row .mute:active{transform:translateY(3px);
+    box-shadow:0 2px 4px rgba(196,185,159,.55) inset,0 0 0 1px rgba(216,207,187,.85),0 2px 4px rgba(140,122,92,.2)}
+  .volume-row .mute svg{width:24px;height:24px}
+
+  /* 滑轨：粗，带凹槽感，滑块大而好抓 */
   .vol-slider{
-    -webkit-appearance:none;appearance:none;
-    width:200px;height:4px;border-radius:2px;
-    background:var(--surface-3);outline:none;
+    -webkit-appearance:none;appearance:none;flex:1;width:auto;height:14px;
+    border-radius:7px;outline:none;cursor:pointer;
+    background:linear-gradient(180deg,#ddd4c1,#ece5d6);
+    box-shadow:0 2px 4px rgba(150,133,102,.35) inset,0 1px 0 rgba(255,255,255,.8);
   }
   .vol-slider::-webkit-slider-thumb{
-    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
-    background:var(--label);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3);
+    -webkit-appearance:none;width:30px;height:30px;border-radius:50%;cursor:pointer;
+    background:linear-gradient(168deg,#ffffff,#f0e8d8);
+    box-shadow:0 2px 5px rgba(140,122,92,.45),0 0 0 1px rgba(216,207,187,.9),
+      0 1px 0 rgba(255,255,255,.95) inset;
+    transition:transform .12s;
   }
+  .vol-slider::-webkit-slider-thumb:hover{transform:scale(1.08)}
+  .vol-slider::-webkit-slider-thumb:active{transform:scale(.96)}
   .vol-slider::-moz-range-thumb{
-    width:16px;height:16px;border-radius:50%;border:none;
-    background:var(--label);cursor:pointer;
+    width:30px;height:30px;border:none;border-radius:50%;cursor:pointer;
+    background:linear-gradient(168deg,#ffffff,#f0e8d8);
+    box-shadow:0 2px 5px rgba(140,122,92,.45),0 0 0 1px rgba(216,207,187,.9);
+  }
+  .vol-slider::-moz-range-track{height:14px;border-radius:7px;background:#e4dccb}
+
+  /* 收藏快捷台：音量键下方的一排大胶囊键，跟随收藏列表动态生成 */
+  .quick-favs{
+    display:flex;justify-content:center;align-items:stretch;
+    gap:9px;width:100%;
+  }
+  .quick-favs .featured-chip{
+    flex:0 1 auto;max-width:calc((100% - 18px)/3);min-width:0;
+    justify-content:center;
+    height:56px;padding:0 10px;gap:8px;
+    border-radius:16px;
+    font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer;
+    overflow:hidden;letter-spacing:-.01em;
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -4px 6px rgba(196,185,159,.45) inset,
+      0 0 0 1px rgba(216,207,187,.85),0 6px 13px -3px rgba(140,122,92,.42);
+    transition:transform .09s,box-shadow .09s;
+  }
+  .quick-favs .featured-chip .qf-name{
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    overflow:hidden;line-height:1.18;text-align:center;
+    word-break:break-word;min-width:0;
+  }
+  .quick-favs .featured-chip:hover{color:#2f2921}
+  .quick-favs .featured-chip:active{transform:translateY(4px);
+    box-shadow:0 3px 6px rgba(196,185,159,.55) inset,0 0 0 1px rgba(216,207,187,.9),0 2px 5px rgba(140,122,92,.22)}
+  .quick-favs .featured-chip.now{
+    color:#3a3128;
+    background:linear-gradient(168deg,#fff4dd,#f6e4bd);
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -4px 6px rgba(200,170,110,.42) inset,
+      0 0 0 1px rgba(214,193,150,.9),0 6px 13px -3px rgba(150,125,80,.42);
+  }
+  .quick-favs .featured-chip.now::before{
+    content:'';width:8px;height:8px;border-radius:50%;flex-shrink:0;
+    background:var(--amber);box-shadow:0 0 8px var(--amber);
+  }
+  .quick-favs .qf-empty{
+    width:100%;text-align:center;font-size:12.5px;color:var(--ink-3);
+    padding:18px 10px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(230,223,208,.45),rgba(242,236,224,.25));
+    box-shadow:0 2px 5px rgba(150,133,102,.2) inset,0 1px 0 rgba(255,255,255,.85);
   }
 
-  /* ===== 分区标题 ===== */
-  .section{margin-bottom:28px}
-  .section-head{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:0 4px 12px;
-  }
-  .section-head h2{font-size:22px;font-weight:700;letter-spacing:-.4px;margin:0}
-  .section-head .count{font-size:14px;color:var(--secondary)}
+  /* ========== 右栏 · 电台库 ========== */
+  .lp-right{grid-area:right;display:flex;flex-direction:column;min-height:0;min-width:0}
 
-  /* ===== 电台列表 (iOS List 风格) ===== */
-  .station-list{
-    background:var(--surface);border-radius:var(--radius);
-    overflow:hidden;margin-bottom:8px;
+  .lib-panel{
+    flex:1;min-height:0;display:flex;flex-direction:column;
+    padding:22px 22px 16px;border-radius:28px;
+    background:linear-gradient(168deg,#fffefa 0%,var(--cream-1) 60%,var(--cream-2) 100%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.95) inset,
+      0 0 0 1px rgba(205,195,174,.55),
+      0 26px 52px -18px rgba(140,122,92,.42),
+      0 6px 16px -4px rgba(140,122,92,.2);
   }
+  .lib-title{
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+    font-size:13px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--ink-3);margin:0 4px 14px;
+  }
+
+  /* 精选快捷台：大胶囊键 */
+  .featured{display:flex;gap:11px;flex-wrap:wrap;margin:0 0 16px;flex-shrink:0}
+  .featured-chip{
+    display:inline-flex;align-items:center;gap:9px;
+    padding:13px 22px;border-radius:26px;white-space:nowrap;
+    font-size:14px;font-weight:600;color:var(--ink-2);cursor:pointer;
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -3px 5px rgba(196,185,159,.42) inset,
+      0 0 0 1px rgba(216,207,187,.8),0 5px 11px -3px rgba(140,122,92,.38);
+    transition:transform .09s,box-shadow .09s,color .18s;
+  }
+  .featured-chip:hover{color:var(--ink)}
+  .featured-chip:active{transform:translateY(3px);
+    box-shadow:0 2px 5px rgba(196,185,159,.5) inset,0 0 0 1px rgba(216,207,187,.85),0 2px 4px rgba(140,122,92,.2)}
+  .featured-chip.now{
+    color:#3a3128;
+    background:linear-gradient(168deg,#fff4dd,#f6e4bd);
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -3px 5px rgba(200,170,110,.4) inset,
+      0 0 0 1px rgba(214,193,150,.9),0 5px 11px -3px rgba(150,125,80,.4);
+  }
+  .featured-chip.now::before{
+    content:'';width:8px;height:8px;border-radius:50%;flex-shrink:0;
+    background:var(--amber);box-shadow:0 0 8px var(--amber);
+  }
+  .chip{font-size:14px}
+
+  /* 分段控制器：做成凹槽里的滑动块（机械感） */
+  .segmented{
+    position:relative;display:flex;padding:4px;border-radius:13px;
+    margin:0 0 16px;flex-shrink:0;
+    background:linear-gradient(180deg,#e2dac8,#efe8d9);
+    box-shadow:0 2px 5px rgba(150,133,102,.32) inset,0 1px 0 rgba(255,255,255,.85);
+  }
+  .seg-thumb{
+    position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/4);
+    border-radius:10px;z-index:0;pointer-events:none;
+    background:linear-gradient(168deg,#fffefa,var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,
+      0 3px 7px -1px rgba(140,122,92,.45),0 0 0 1px rgba(216,207,187,.7);
+    transition:transform .28s var(--ease);
+  }
+  .segmented .tab{
+    flex:1;position:relative;z-index:1;padding:11px 0;
+    font-size:14px;font-weight:600;color:var(--ink-3);
+    background:none;border:none;border-radius:10px;cursor:pointer;
+    transition:color .2s;
+  }
+  .segmented .tab.active{color:var(--ink)}
+
+  /* 面板 */
+  .panels{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .panels .section{
+    flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    display:none;margin:0;padding-right:10px;
+  }
+  .panels .section.active{display:block}
+  .section-head{display:flex;align-items:center;justify-content:space-between;
+    padding:2px 6px 12px}
+  .section-head h2{font-size:16px;font-weight:600;color:var(--ink);margin:0}
+  .section-head .count{font-size:12px;color:var(--ink-3)}
+
+  /* 电台列表：一排排大条 */
+  .station-list{margin:0 0 14px}
   .station-item{
-    display:flex;align-items:center;gap:12px;
-    padding:12px 16px;cursor:pointer;
-    border-bottom:.5px solid var(--separator);
-    transition:background .15s;
+    display:flex;align-items:center;gap:15px;
+    padding:15px 18px;margin-bottom:7px;border-radius:16px;cursor:default;
+    background:linear-gradient(168deg,#fffefa,var(--cream-1));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,
+      0 0 0 1px rgba(216,207,187,.72),
+      0 3px 8px -2px rgba(150,133,102,.28);
+    transition:box-shadow .12s,transform .1s;
   }
-  .station-item:last-child{border-bottom:none}
-  .station-item:hover{background:var(--surface-2)}
-  .station-item:active{background:var(--surface-3)}
-  .station-item.playing{background:rgba(250,35,59,.06)}
-  .station-item.playing .st-icon{background:var(--accent)}
+  .station-item:hover{
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,
+      0 0 0 1px rgba(205,195,174,.85),
+      0 6px 14px -3px rgba(150,133,102,.36);
+  }
+  .station-item:active{transform:scale(.994)}
+  .station-item.playing{
+    background:linear-gradient(168deg,#fff5e0,#f8e8c8);
+    box-shadow:0 1px 0 rgba(255,255,255,.9) inset,
+      0 0 0 1px rgba(214,193,150,.9),
+      0 4px 10px -2px rgba(170,140,90,.34);
+  }
   .st-icon{
-    width:44px;height:44px;border-radius:10px;flex-shrink:0;
-    background:linear-gradient(135deg,var(--surface-3),var(--fill));
+    width:52px;height:52px;border-radius:14px;flex-shrink:0;position:relative;
     display:flex;align-items:center;justify-content:center;
-    font-size:20px;color:var(--secondary);
-    transition:.2s;
+    font-size:22px;cursor:pointer;
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -3px 5px rgba(196,185,159,.4) inset,
+      0 0 0 1px rgba(216,207,187,.75),0 3px 7px -2px rgba(150,133,102,.3);
+    transition:transform .1s,box-shadow .1s;
   }
-  .station-item.playing .st-icon{color:#fff}
-  .station-item.playing .st-icon::after{
-    content:'';position:absolute;width:6px;height:6px;border-radius:50%;
-    background:#fff;animation:equalize .8s ease-in-out infinite alternate;
+  .station-item.playing .st-icon{
+    background:linear-gradient(168deg,#ffdfa0,#f2c96f);
+    box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 -3px 5px rgba(190,150,80,.4) inset,
+      0 0 0 1px rgba(214,180,110,.9),0 3px 9px -2px rgba(170,130,70,.4);
   }
-  @keyframes equalize{from{height:4px}to{height:14px}}
-  .st-info{flex:1;min-width:0}
-  .st-name{font-size:16px;font-weight:500;color:var(--label);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .st-url{font-size:12px;color:var(--tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+  .st-icon:active{transform:translateY(2px);
+    box-shadow:0 2px 4px rgba(196,185,159,.5) inset,0 0 0 1px rgba(216,207,187,.8),0 1px 3px rgba(150,133,102,.2)}
+  .st-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .st-name{
+    font-size:15.5px;font-weight:600;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .st-url{
+    font-size:11px;color:var(--ink-3);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+  }
+  /* 收藏心形：大圆键 */
   .st-fav{
-    width:32px;height:32px;border-radius:50%;flex-shrink:0;
+    width:50px;height:50px;border-radius:50%;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    color:var(--tertiary);transition:.2s;
+    color:var(--ink-3);
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -3px 4px rgba(196,185,159,.4) inset,
+      0 0 0 1px rgba(216,207,187,.75),0 3px 7px -2px rgba(150,133,102,.28);
+    transition:transform .09s,box-shadow .09s,color .18s;
   }
-  .st-fav:hover{color:var(--accent);background:var(--accent-soft)}
-  .st-fav.on{color:var(--accent)}
-  .st-fav svg{width:20px;height:20px}
+  .st-fav:hover{color:var(--red)}
+  .st-fav:active{transform:translateY(3px);
+    box-shadow:0 2px 4px rgba(196,185,159,.5) inset,0 0 0 1px rgba(216,207,187,.8),0 1px 3px rgba(150,133,102,.18)}
+  .st-fav.on{color:var(--red);background:linear-gradient(168deg,#fff6f4,#f7e6e3)}
+  .st-fav svg{width:24px;height:24px}
 
-  .empty-state{text-align:center;padding:24px 16px;color:var(--tertiary);font-size:14px}
+  .empty-state{text-align:center;padding:34px 18px;color:var(--ink-3);font-size:14px}
 
-  /* ===== 搜索栏 (iOS 搜索框风格) ===== */
-  .search-card{background:var(--surface);border-radius:var(--radius);padding:12px;margin-bottom:12px}
-  .search-card .hint{font-size:12px;color:var(--tertiary);margin-top:10px;line-height:1.4}
-  .search-row{display:flex;gap:8px;flex-wrap:wrap}
+  /* 全部电台（900+）：加密列表，滚动舒适但仍保留实体按键手感 */
+  #presetList .station-item{padding:10px 14px;margin-bottom:6px;gap:12px}
+  #presetList .st-icon{width:42px;height:42px;border-radius:11px;font-size:18px}
+  #presetList .st-fav{width:42px;height:42px}
+  #presetList .st-fav svg{width:21px;height:21px}
+  #presetList .st-name{font-size:14px}
+  #presetList .st-url{display:none}
+  #globalSearchList .station-item{padding:10px 14px;margin-bottom:6px;gap:12px}
+  #globalSearchList .st-icon{width:42px;height:42px;border-radius:11px;font-size:18px}
+  #globalSearchList .st-fav{width:42px;height:42px}
+  #globalSearchList .st-fav svg{width:21px;height:21px}
+  #globalSearchList .st-name{font-size:14px}
+  #globalSearchList .st-url{display:none}
+
+  /* 搜索 / 定制卡片 */
+  .search-card,.custom-card{
+    padding:18px;border-radius:18px;margin-bottom:14px;
+    background:linear-gradient(180deg,rgba(230,223,208,.5),rgba(242,236,224,.28));
+    box-shadow:0 2px 6px rgba(150,133,102,.2) inset,0 1px 0 rgba(255,255,255,.85);
+  }
+  .search-card .hint,.custom-card .hint{
+    font-size:11.5px;color:var(--ink-3);margin-top:11px;line-height:1.55;
+  }
+  .search-row{display:flex;gap:10px;flex-wrap:wrap}
+
+  /* 输入框：内凹纸感 */
   .ios-input{
-    flex:1;min-width:140px;background:var(--surface-2);
-    border:none;border-radius:10px;color:var(--label);
-    padding:10px 14px;font-size:16px;outline:none;
+    flex:1;min-width:150px;
+    background:linear-gradient(180deg,#f7f2e7,#fffdf8);
+    border:none;border-radius:13px;color:var(--ink);
+    padding:14px 17px;font-size:15px;outline:none;
+    box-shadow:0 2px 5px rgba(150,133,102,.28) inset,0 1px 0 rgba(255,255,255,.9);
+    transition:box-shadow .2s;
   }
-  .ios-input::placeholder{color:var(--tertiary)}
-  .ios-input:focus{background:var(--surface-3)}
+  .ios-input::placeholder{color:var(--ink-3)}
+  .ios-input:focus{
+    box-shadow:0 2px 6px rgba(150,133,102,.35) inset,0 1px 0 rgba(255,255,255,.9),
+      0 0 0 2px hsl(var(--art-hue) 45% 72%);
+  }
   .ios-select{
-    background:var(--surface-2);border:none;border-radius:10px;
-    color:var(--label);padding:10px 14px;font-size:14px;outline:none;
+    background-color:#f7f2e7;border:none;border-radius:13px;
+    color:var(--ink);padding:14px 36px 14px 17px;font-size:14px;outline:none;
     -webkit-appearance:none;appearance:none;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2398989f' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+    box-shadow:0 2px 5px rgba(150,133,102,.28) inset,0 1px 0 rgba(255,255,255,.9);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7062' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;
   }
+
+  /* 按钮：大键 */
   .ios-btn{
-    background:var(--accent);color:#fff;border:none;border-radius:10px;
-    padding:10px 20px;font-size:15px;font-weight:600;cursor:pointer;
-    transition:.2s;white-space:nowrap;
+    min-height:50px;padding:0 26px;border-radius:13px;
+    font-size:14.5px;font-weight:600;letter-spacing:.04em;white-space:nowrap;
+    color:#3a3128;cursor:pointer;
+    background:linear-gradient(168deg,#ffffff,#f2ead9);
+    box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 -4px 6px rgba(196,185,159,.42) inset,
+      0 0 0 1px rgba(216,207,187,.85),0 5px 11px -3px rgba(150,133,102,.4);
+    transition:transform .09s,box-shadow .09s;
   }
-  .ios-btn:hover{filter:brightness(1.1)}
-  .ios-btn:active{transform:scale(.96)}
-  .ios-btn.secondary{background:var(--surface-3);color:var(--label)}
-  .ios-btn.danger{background:rgba(255,69,58,.15);color:var(--red)}
+  .ios-btn:active{transform:translateY(4px);
+    box-shadow:0 3px 6px rgba(196,185,159,.55) inset,0 0 0 1px rgba(216,207,187,.9),0 2px 5px rgba(150,133,102,.22)}
+  .ios-btn.secondary{
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));color:var(--ink-2)}
+  .ios-btn.danger{color:var(--red);background:linear-gradient(168deg,#fff6f5,#f7e7e4)}
 
-  .filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  .chip{
-    font-size:13px;padding:6px 14px;border-radius:16px;
-    background:var(--surface-2);color:var(--secondary);
-    cursor:pointer;user-select:none;transition:.2s;border:1px solid transparent;
-  }
-  .chip:hover{background:var(--surface-3)}
-  .chip.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
-
-  /* ===== 自定义链接 ===== */
-  .custom-card{background:var(--surface);border-radius:var(--radius);padding:16px}
-  .custom-card .hint{font-size:12px;color:var(--tertiary);margin-top:10px}
-
-  /* ===== 设置面板 ===== */
-  .settings-list{background:var(--surface);border-radius:var(--radius);overflow:hidden}
-  .setting-item{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:14px 16px;border-bottom:.5px solid var(--separator);
-  }
-  .setting-item:last-child{border-bottom:none}
-  .setting-label{font-size:16px;font-weight:400}
-  .setting-value{font-size:14px;color:var(--secondary)}
-  .setting-btn{color:var(--accent);font-size:16px;font-weight:500;cursor:pointer}
-  .setting-btn.danger{color:var(--red)}
-  .setting-btn:active{opacity:.6}
-  .setting-btns{display:flex;gap:16px;align-items:center}
-
-  .status-info{
-    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
-    font-size:13px;color:var(--secondary);padding:12px 4px;
-  }
-  .status-info b{color:var(--label);font-weight:500}
-  .status-info .ok{color:var(--green)}
-  .status-info .warn{color:var(--orange)}
-  .status-info .err{color:var(--red)}
-
-  /* ===== 设置后台模态弹窗 ===== */
+  /* ========== 设置面板 ========== */
   .modal-overlay{
     position:fixed;inset:0;z-index:200;
-    background:rgba(0,0,0,.6);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    opacity:0;pointer-events:none;
-    transition:opacity .3s var(--ease);
+    background:rgba(70,60,45,.34);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transition:opacity .3s var(--ease);
   }
   .modal-overlay.open{opacity:1;pointer-events:auto}
+
   .settings-modal{
     position:fixed;top:0;right:0;bottom:0;z-index:201;
-    width:min(440px,100%);max-width:100vw;
-    background:var(--bg);
+    width:min(470px,100%);max-width:100vw;
+    background:linear-gradient(168deg,#fffdf9,var(--cream-1) 60%);
     transform:translateX(100%);
     transition:transform .35s var(--ease);
-    display:flex;flex-direction:column;
-    overflow:hidden;
+    display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:-16px 0 46px -14px rgba(130,112,84,.42);
   }
   .settings-modal.open{transform:translateX(0)}
   .settings-modal-header{
     display:flex;align-items:center;justify-content:space-between;
-    padding:16px 20px;
-    background:rgba(0,0,0,.72);
-    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-    border-bottom:.5px solid var(--separator);
-    flex-shrink:0;
+    padding:20px 24px;flex-shrink:0;
+    border-bottom:1px solid rgba(205,195,174,.6);
+    background:linear-gradient(180deg,#fffefa,rgba(250,246,236,.4));
   }
-  .settings-modal-header h2{font-size:20px;font-weight:700;margin:0}
+  .settings-modal-header h2{
+    font-family:"Iowan Old Style",Georgia,serif;
+    font-size:19px;font-weight:600;letter-spacing:.06em;margin:0;color:var(--ink)}
   .settings-modal-close{
-    width:32px;height:32px;border-radius:50%;
+    width:44px;height:44px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.1);color:var(--label);
-    transition:.2s var(--ease);
+    color:var(--ink-2);
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -3px 4px rgba(196,185,159,.4) inset,
+      0 0 0 1px rgba(216,207,187,.8),0 4px 9px -2px rgba(150,133,102,.35);
+    transition:transform .09s,box-shadow .09s;
   }
-  .settings-modal-close:active{opacity:.6}
-  .settings-modal-body{
-    flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    padding:16px;
-  }
+  .settings-modal-close:active{transform:translateY(3px);
+    box-shadow:0 2px 4px rgba(196,185,159,.5) inset,0 0 0 1px rgba(216,207,187,.85),0 1px 3px rgba(150,133,102,.2)}
+  .settings-modal-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px}
 
-  /* ===== 折叠详情 ===== */
+  .settings-list{display:flex;flex-direction:column;gap:8px}
+  .setting-item{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:16px 20px;border-radius:15px;
+    background:linear-gradient(168deg,#fffefa,var(--cream-1));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,
+      0 0 0 1px rgba(216,207,187,.7),0 3px 7px -2px rgba(150,133,102,.24);
+  }
+  .setting-label{font-size:15px;color:var(--ink)}
+  .setting-value{font-size:13.5px;color:var(--ink-3);
+    font-family:ui-monospace,"SF Mono",Consolas,monospace}
+  .setting-value.ok{color:var(--green)}
+  .setting-value.warn{color:var(--amber)}
+  .setting-value.err{color:var(--red)}
+  .setting-btns{display:flex;gap:12px;align-items:center}
+  /* 设置里的小按键也做成实体键 */
+  .setting-btn{
+    min-height:42px;display:inline-flex;align-items:center;justify-content:center;
+    padding:0 20px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;
+    color:var(--ink);
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 -3px 5px rgba(196,185,159,.4) inset,
+      0 0 0 1px rgba(216,207,187,.8),0 4px 9px -2px rgba(150,133,102,.34);
+    transition:transform .09s,box-shadow .09s;
+  }
+  .setting-btn:active{transform:translateY(3px);
+    box-shadow:0 2px 4px rgba(196,185,159,.5) inset,0 0 0 1px rgba(216,207,187,.85),0 1px 3px rgba(150,133,102,.2)}
+  .setting-btn.danger{color:var(--red);
+    background:linear-gradient(168deg,#fff6f5,#f7e7e4)}
+
+  .status-info{
+    margin-top:14px;padding:18px 20px;border-radius:15px;
+    font-size:12.5px;color:var(--ink-2);line-height:1.7;
+    display:flex;flex-direction:column;gap:10px;
+    background:linear-gradient(180deg,rgba(230,223,208,.45),rgba(242,236,224,.25));
+    box-shadow:0 2px 6px rgba(150,133,102,.18) inset,0 1px 0 rgba(255,255,255,.85);
+  }
+  .status-info b{color:var(--ink);font-weight:600}
+
   details{
-    background:var(--surface);border-radius:var(--radius);
-    margin-top:8px;overflow:hidden;
+    margin-top:12px;border-radius:15px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(230,223,208,.45),rgba(242,236,224,.25));
+    box-shadow:0 2px 6px rgba(150,133,102,.18) inset,0 1px 0 rgba(255,255,255,.85);
   }
   details summary{
-    padding:14px 16px;cursor:pointer;font-size:15px;color:var(--secondary);
+    padding:16px 20px;cursor:pointer;font-size:14px;color:var(--ink-2);
     list-style:none;-webkit-user-select:none;user-select:none;
     display:flex;justify-content:space-between;align-items:center;
   }
   details summary::-webkit-details-marker{display:none}
-  details summary::after{content:'›';font-size:22px;color:var(--tertiary);transition:.2s}
+  details summary::after{content:'›';font-size:22px;color:var(--ink-3);
+    transition:transform .2s var(--ease)}
   details[open] summary::after{transform:rotate(90deg)}
-  details summary:active{background:var(--surface-2)}
   details pre{
-    max-height:200px;overflow:auto;font-size:12px;
-    color:var(--secondary);margin:0;padding:0 16px 14px;
-    font-family:"SF Mono",ui-monospace,monospace;
+    max-height:220px;overflow:auto;font-size:11.5px;color:var(--ink-3);
+    margin:0;padding:0 20px 18px;
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;line-height:1.6;
   }
 
-  /* ===== Toast (iOS 风格) ===== */
+  /* ========== Toast ========== */
   .toast{
-    position:fixed;left:50%;bottom:100px;transform:translateX(-50%);
-    background:rgba(40,40,42,.92);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-    color:#fff;padding:12px 20px;border-radius:14px;
-    font-size:15px;font-weight:500;z-index:200;max-width:80vw;
-    animation:toastIn .3s var(--ease);box-shadow:0 8px 32px rgba(0,0,0,.4);
+    position:fixed;left:50%;bottom:44px;transform:translateX(-50%);
+    padding:15px 26px;border-radius:16px;z-index:300;max-width:80vw;
+    font-size:15px;font-weight:600;color:var(--ink);
+    background:linear-gradient(168deg,#fffefa,var(--cream-2));
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,
+      0 0 0 1px rgba(205,195,174,.7),0 14px 32px -8px rgba(130,112,84,.45);
+    animation:toastIn .3s var(--ease);
   }
-  .toast.err{background:rgba(255,69,58,.92)}
-  .toast.ok{background:rgba(48,209,88,.92)}
-  @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px) scale(.95)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+  .toast.err{color:var(--red)}
+  .toast.ok{color:var(--green)}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,18px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 
-  /* ===== 响应式 ===== */
-  @media (max-width:600px){
-    .container{padding:16px 12px 120px}
-    .now-playing{padding:24px 20px}
-    .artwork{width:140px;height:140px;font-size:56px}
-    .np-name{font-size:20px}
-    .controls{gap:20px}
-    .section-head h2{font-size:20px}
-    .search-row{flex-direction:column}
-    .ios-input,.ios-select{width:100%}
-    .ios-btn{width:100%;text-align:center}
+  /* ========== 横屏矮屏（8 寸平板）自适应 ========== */
+  @media (max-height:620px){
+    .container{grid-template-columns:minmax(320px,40%) minmax(0,1fr);padding:10px 18px 12px;column-gap:18px}
+    .nav-inner{padding:2px 2px 8px;grid-template-columns:minmax(320px,40%) minmax(0,1fr);column-gap:18px}
+    .brand-inner{max-width:none;padding-left:14px}   /* 16+6 减去花体左空 8px */
+    .brand-text h1{font-size:39.936px}
+    .now-playing{padding:14px 16px;border-radius:22px;gap:10px}
+    .screen{padding:6px;border-radius:18px}
+    .screen-main{padding:11px 14px 10px;gap:14px}
+    .artwork{width:56px;height:56px;font-size:23px}
+    .np-name{font-size:17px}
+    .lcd-clock{gap:2px;padding-left:11px}
+    .lcd-time{font-size:27.6px}
+    .lcd-date{font-size:15px}
+    .lcd-sec{font-size:12px}
+    .viz-wrap{height:32.4px;margin:5px 5px 1px}
+    canvas.viz{height:32.4px}
+    .grille i{width:6px;height:6px}
+    .controls{gap:24px;margin:0}
+    .ctrl-btn{width:62px;height:62px}
+    .ctrl-btn svg{width:27px;height:27px}
+    .play-btn{width:88px;height:88px}
+    .play-btn svg{width:38px;height:38px}
+    .volume-row{padding:9px 15px;margin:0}
+    .quick-favs .featured-chip{height:48px;font-size:13px;border-radius:14px}
+    .lib-panel{padding:16px 16px 12px;border-radius:22px}
+    .segmented .tab{padding:9px 0;font-size:13px}
+    .station-item{padding:12px 14px;margin-bottom:6px;border-radius:14px}
+    .st-icon{width:46px;height:46px;border-radius:12px;font-size:19px}
+    .st-fav{width:46px;height:46px}
+    .st-name{font-size:14.5px}
   }
 
-  /* 滚动锚点偏移 */
-  .scroll-anchor{scroll-margin-top:80px}
-</style>
-
-<!-- ===== WATERS LITE 单屏布局 ===== -->
-<style>
-  html,body{height:100%;overflow:hidden}
-  .container{
-    height:100vh;height:100dvh;max-width:1000px;margin:0 auto;
-    display:flex;flex-direction:column;padding:0;overflow:hidden;
-  }
-  .nav{position:sticky;top:0;z-index:100;background:rgba(0,0,0,.72);
-    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-    border-bottom:.5px solid var(--separator)}
-  .nav-inner{padding:10px 16px}
-  /* 紧凑 Now Playing */
-  .now-playing{padding:12px 16px;margin:0;border-radius:0;
-    background:linear-gradient(180deg,#1a1a1c 0%,#0a0a0b 100%)}
-  .artwork{width:72px;height:72px;font-size:32px;margin:0 auto 8px}
-  .np-name{font-size:17px;margin:0 0 2px}
-  .np-meta{display:none}
-  .np-status{margin-bottom:4px}
-  .np-repair{font-size:11px;min-height:14px;margin:0}
-  .viz-wrap{height:24px;margin:6px 0}
-  .controls{gap:18px;margin-top:4px}
-  .play-btn{width:52px;height:52px}
-  .play-btn svg{width:24px;height:24px}
-  .ctrl-btn{width:38px;height:38px}
-  .ctrl-btn svg{width:22px;height:22px}
-  .volume-row{margin-top:8px}
-  .vol-slider{width:160px}
-  /* 精选 chips */
-  .featured{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;
-    -webkit-overflow-scrolling:touch;flex-shrink:0}
-  .featured-chip{white-space:nowrap;font-size:13px;padding:8px 14px;border-radius:18px;
-    background:var(--surface-2);color:var(--label);border:1px solid var(--separator);
-    cursor:pointer;transition:.2s}
-  .featured-chip:active{background:var(--accent-soft);border-color:var(--accent)}
-  .featured-chip.now{background:var(--accent);color:#fff;border-color:var(--accent)}
-  /* Tab 栏 */
-  .tabbar{display:flex;gap:6px;padding:6px 16px;flex-shrink:0;
-    border-bottom:.5px solid var(--separator);background:rgba(0,0,0,.4)}
-  .tab{flex:1;padding:8px 0;border-radius:10px;font-size:14px;font-weight:600;
-    color:var(--secondary);background:transparent;cursor:pointer;transition:.2s}
-  .tab.active{background:var(--surface-2);color:var(--label)}
-  /* Panels 区：内部滚动，整页不滚动 */
-  .panels{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-  .panels .section{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    display:none;margin:0}
-  .panels .section.active{display:block}
-  .panels .section-head{padding:14px 16px 8px}
-  .panels .station-list{margin:0 0 8px}
-  @media (max-width:600px){
-    .now-playing{padding:10px 12px}
-    .artwork{width:60px;height:60px;font-size:27px}
-  }
-</style>
-
-<!-- ===== WATERS VINYL 横版拟物主题 ===== -->
-<style>
-  :root{
-    --bg:#eef0f5; --surface:#f8f9fc; --surface-2:#eceef4; --surface-3:#e0e3ec;
-    --fill:#d5d9e4; --separator:#dde0e9;
-    --label:#2b2f36; --label-2:#3a3f47; --secondary:#7c8394; --tertiary:#a3a9b8;
-    --accent:#3f7ce8; --accent-soft:rgba(63,124,232,.14);
-    --neu:8px 8px 18px rgba(166,177,198,.55), -8px -8px 18px rgba(255,255,255,.95);
-    --neu-sm:4px 4px 10px rgba(166,177,198,.5), -4px -4px 10px rgba(255,255,255,.9);
-    --neu-in:inset 3px 3px 7px rgba(166,177,198,.45), inset -3px -3px 7px rgba(255,255,255,.9);
-  }
-  body{background:linear-gradient(160deg,#f2f4f9 0%,#e9ecf3 100%);color:var(--label)}
-
-  /* ---- 整体横版 Grid ---- */
-  .container{
-    max-width:1280px;display:grid;
-    grid-template-columns:minmax(300px,5fr) 7fr;
-    grid-template-rows:auto minmax(0,1fr);
-    grid-template-areas:"nav nav" "left right";
-    column-gap:28px;padding:0 24px 14px;
-  }
-  .nav{grid-area:nav;margin:0 -24px 10px;border-radius:0 0 18px 18px;
-    background:rgba(238,240,245,.88);border-bottom:1px solid var(--separator)}
-  .nav h1{color:var(--label)}
-  .nav .subtitle{color:var(--secondary)}
-  .nav-icon{background:var(--surface-2);box-shadow:var(--neu-sm);color:var(--label-2)}
-  .nav-icon:hover{background:var(--surface-3)}
-
-  /* ---- 左栏：唱片机 ---- */
-  .lp-left{grid-area:left;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;min-height:0;min-width:0}
-  .now-playing{background:transparent;padding:4px 0;margin:0;border-radius:0;
-    display:flex;flex-direction:column;align-items:center;gap:5px;width:100%}
-  .artwork{display:none!important}
-
-  .vinyl-stage{position:relative;width:min(34vh,250px);aspect-ratio:1/1;margin:2px 0 4px;flex-shrink:0}
-  .vinyl{position:absolute;inset:0;border-radius:50%;
-    background:repeating-radial-gradient(circle at 50% 50%,#0f1013 0 1.5px,#1b1c21 1.5px 3.5px);
-    box-shadow:10px 10px 22px rgba(166,177,198,.6),-10px -10px 22px rgba(255,255,255,.95);
-    display:flex;align-items:center;justify-content:center}
-  .vinyl-label{width:35%;height:35%;border-radius:50%;position:relative;
-    background:radial-gradient(circle at 35% 30%,#74a6f4,#3f7ce8 62%,#2d5fbd);
-    box-shadow:inset 0 0 0 2px rgba(255,255,255,.28), 0 0 0 3px rgba(0,0,0,.25)}
-  .vinyl-label::after{content:'';position:absolute;left:50%;top:50%;width:10%;height:10%;
-    transform:translate(-50%,-50%);border-radius:50%;background:var(--bg);
-    box-shadow:0 0 0 3px rgba(255,255,255,.4)}
-  .vinyl-spin .vinyl{animation:spin 3.4s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-
-  .tonearm{position:absolute;right:-7%;top:-5%;width:52%;height:82%;pointer-events:none;z-index:2}
-  .arm-pivot{position:absolute;right:4%;top:0;width:24%;aspect-ratio:1/1;border-radius:50%;
-    background:radial-gradient(circle at 35% 30%,#fdfdff,#c7ccd7 72%);
-    box-shadow:var(--neu-sm)}
-  .arm-bar{position:absolute;right:13.5%;top:10%;width:6%;height:86%;
-    background:linear-gradient(90deg,#eceef4,#b6bcc8);border-radius:6px;
-    transform-origin:50% 3%;transform:rotate(-26deg);
-    box-shadow:2px 2px 5px rgba(166,177,198,.5);transition:transform .8s var(--ease)}
-  .arm-head{position:absolute;left:17%;bottom:-1%;width:15%;height:10%;
-    background:linear-gradient(180deg,#eef0f5,#c2c7d3);border-radius:4px 4px 7px 7px;
-    transform:rotate(-18deg);box-shadow:2px 2px 4px rgba(166,177,198,.5)}
-  .vinyl-spin .arm-bar{transform:rotate(4deg)}
-
-  .np-name{font-size:clamp(15px,2.6vh,19px);margin:0;color:var(--label);
-    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .np-status{margin-bottom:0;font-size:11.5px;color:var(--secondary)}
-  .np-repair{font-size:10.5px;min-height:13px}
-  .viz-wrap{width:100%;max-width:290px;height:24px;margin:2px 0 0}
-  canvas.viz{height:24px}
-
-  /* ---- 右栏：控制台 ---- */
-  .lp-right{grid-area:right;display:flex;flex-direction:column;min-height:0;min-width:0}
-  .controls{gap:20px;margin:2px 0 0;flex-shrink:0}
-  .ctrl-btn{background:var(--surface-2);box-shadow:var(--neu-sm);color:var(--label-2)}
-  .ctrl-btn:hover{background:var(--surface-3);transform:scale(1.06)}
-  .ctrl-btn.fav{color:var(--tertiary)}
-  .ctrl-btn.fav.on{color:var(--accent)}
-  .play-btn{background:var(--surface);color:var(--label);box-shadow:var(--neu)}
-  .play-btn:hover{transform:scale(1.04)}
-  .play-btn:active{transform:scale(.94)}
-  .volume-row{margin:8px 0 0;flex-shrink:0}
-  .volume-row svg{color:var(--secondary)}
-  .vol-slider{width:min(300px,36vw);background:var(--fill)}
-  .vol-slider::-webkit-slider-thumb{background:var(--accent);box-shadow:0 2px 6px rgba(63,124,232,.4)}
-  .vol-slider::-moz-range-thumb{background:var(--accent)}
-
-  /* ---- 精选 chips ---- */
-  .featured{padding:8px 0 4px;flex-shrink:0}
-  .featured-chip{background:var(--surface-2);color:var(--label-2);
-    border:1px solid transparent;box-shadow:var(--neu-sm);font-size:12.5px;padding:7px 13px}
-  .featured-chip:active{background:var(--accent-soft)}
-  .featured-chip.now{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(63,124,232,.35)}
-
-  /* ---- Tab 栏 ---- */
-  .tabbar{padding:5px 0;background:transparent;border-bottom:none;gap:8px;flex-shrink:0}
-  .tab{background:var(--surface-2);box-shadow:var(--neu-sm);color:var(--secondary);
-    border-radius:11px;padding:7px 0;font-size:13px}
-  .tab.active{background:var(--accent);color:#fff}
-
-  /* ---- Panels / 列表 ---- */
-  .panels .section{padding:0 2px}
-  .panels .section-head{padding:8px 2px 6px}
-  .section-head h2{font-size:17px;color:var(--label)}
-  .section-head .count{font-size:12px;color:var(--secondary)}
-  .station-list{background:var(--surface);border:1px solid var(--separator);
-    box-shadow:var(--neu-sm);border-radius:14px}
-  .station-item{border-bottom:1px solid var(--separator)}
-  .station-item:hover{background:var(--surface-2)}
-  .station-item:active{background:var(--surface-3)}
-  .station-item.playing{background:var(--accent-soft)}
-  .station-item.playing .st-icon{background:var(--accent)}
-  .st-icon{background:var(--surface-2);color:var(--secondary)}
-  .st-name{color:var(--label)}
-  .st-url{color:var(--tertiary)}
-  .st-fav.on{color:var(--accent)}
-  .st-fav:hover{color:var(--accent);background:var(--accent-soft)}
-  .search-card,.custom-card{background:var(--surface);border:1px solid var(--separator);
-    box-shadow:var(--neu-sm);border-radius:14px}
-  .search-card .hint,.custom-card .hint{color:var(--tertiary)}
-  .ios-input{background:var(--surface-2);color:var(--label);box-shadow:var(--neu-in)}
-  .ios-input::placeholder{color:var(--tertiary)}
-  .ios-input:focus{background:var(--surface)}
-  .ios-select{background-color:var(--surface-2);color:var(--label)}
-  .ios-btn{background:var(--accent)}
-  .ios-btn.secondary{background:var(--surface-3);color:var(--label-2)}
-  .ios-btn.danger{background:rgba(255,69,58,.12);color:#e0362c}
-  .chip{background:var(--surface-2);color:var(--secondary)}
-  .chip:hover{background:var(--surface-3)}
-  .chip.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
-  .empty-state{color:var(--tertiary)}
-
-  /* ---- 设置模态 ---- */
-  .modal-overlay{background:rgba(60,64,75,.45)}
-  .settings-modal{background:var(--bg)}
-  .settings-modal-header{background:rgba(238,240,245,.92);border-bottom:1px solid var(--separator)}
-  .settings-modal-header h2{color:var(--label)}
-  .settings-modal-close{background:var(--surface-2);color:var(--label-2)}
-  .settings-list{background:var(--surface);border-radius:14px}
-  .setting-item{border-bottom:1px solid var(--separator)}
-  .setting-label{color:var(--label)}
-  .status-info{color:var(--secondary)}
-  .status-info b{color:var(--label)}
-  details{background:var(--surface)}
-  details summary{color:var(--secondary)}
-  details summary:active{background:var(--surface-2)}
-  details pre{color:var(--secondary)}
-
-  /* ---- Toast ---- */
-  .toast{background:rgba(255,255,255,.96);color:var(--label);
-    box-shadow:0 8px 32px rgba(120,130,150,.35)}
-  .toast.err{background:rgba(255,86,74,.95);color:#fff}
-  .toast.ok{background:rgba(40,180,110,.95);color:#fff}
-  ::-webkit-scrollbar-thumb{background:var(--fill)}
-
-  /* ---- 竖屏/窄屏退化：上下堆叠 ---- */
-  @media (orientation:portrait),(max-aspect-ratio:1/1){
-    .container{grid-template-columns:1fr;
+  /* ========== 竖屏：上下堆叠 ========== */
+  @media (orientation:portrait){
+    .container{
+      grid-template-columns:1fr;
       grid-template-rows:auto auto minmax(0,1fr);
       grid-template-areas:"nav" "left" "right";
-      padding:0 12px 10px;row-gap:2px}
-    .nav{margin:0 -12px 6px}
-    .vinyl-stage{width:min(26vh,190px)}
-    .viz-wrap{max-width:240px}
-    .controls{gap:16px}
-    .vol-slider{width:min(260px,60vw)}
+      padding:12px 14px 14px;row-gap:12px;column-gap:0;
+    }
+    /* 竖屏：标题与设置键同排、底部对齐（标题底端 = 圆形设置键底端）
+       花体 line-height:1 时，基线以下仍留有约 0.128em 盒内空白，
+       故整体下移 0.128em，让「字迹底端」而非「文本框底端」与圆键底端对齐 */
+    .nav-inner{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:end}
+    .brand-inner{max-width:none;padding-left:14px}   /* 16+6 减去花体左空 8px */
+    .brand-text h1{font-size:43.008px;transform:translateY(.128em)}
+    .lp-left{align-items:stretch}
+    .now-playing{
+      max-width:none;height:auto;padding:16px;border-radius:22px;
+      gap:12px;
+    }
+    .screen{padding:6px}
+    .screen-main{padding:12px 14px 11px}
+    .grille{display:none}
+    .artwork{width:60px;height:60px;font-size:24px}
+    .lcd-clock{gap:2px;padding-left:12px}
+    .lcd-time{font-size:31.2px}
+    .lcd-date{font-size:16.2px}
+    .lcd-sec{font-size:13.2px}
+    .controls{gap:24px;margin:0}
+    .ctrl-btn{width:64px;height:64px}
+    .ctrl-btn svg{width:28px;height:28px}
+    .play-btn{width:90px;height:90px}
+    .play-btn svg{width:39px;height:39px}
+    .viz-wrap{height:36px}
+    canvas.viz{height:36px}
+    .lib-panel{padding:16px;border-radius:22px;flex:1;min-height:0}
+    .search-row{flex-direction:column}
+    .ios-input,.ios-select{width:100%}
+    .ios-btn{width:100%}
   }
 </style>
-</head>
-<body>
-
-<!-- ===== 顶部导航 ===== -->
-<nav class="nav">
-  <div class="nav-inner">
-    <div>
-      <h1>WATERS RADIO</h1>
-      <div class="subtitle">所有数据保存在本机 · 不上传云端</div>
-    </div>
-    <button class="nav-icon" id="navSettings" title="设置">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </button>
-  </div>
-</nav>
 
 <div class="container">
 
-  <!-- ===== Now Playing（左栏 · 唱片机） ===== -->
-  <div class="lp-left">
-  <section class="now-playing" id="nowSection">
-    <div class="vinyl-stage" id="vinylStage">
-      <div class="vinyl"><div class="vinyl-label"></div></div>
-      <div class="tonearm"><div class="arm-pivot"></div><div class="arm-bar"></div><div class="arm-head"></div></div>
-    </div>
-    <div class="artwork" id="artwork">📻</div>
-    <h2 class="np-name" id="nowName">未播放</h2>
-    <div class="np-meta" id="nowMeta">从下方选择电台，或粘贴直播流 URL</div>
-    <div class="np-status" id="status"><span class="dot"></span><span id="statusText">空闲</span></div>
-    <div class="np-repair" id="repairHint"></div>
-    <div class="viz-wrap"><canvas class="viz" id="viz" width="600" height="40"></canvas></div>
-    <div class="controls">
-      <button class="ctrl-btn" id="prevBtn" title="上一台">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-      </button>
-      <button class="ctrl-btn fav" id="favBtn" title="收藏">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      </button>
-      <button class="play-btn" id="playBtn" title="播放/暂停">
-        <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-      </button>
-      <button class="ctrl-btn" id="muteBtn" title="静音">
-        <svg id="muteIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-      </button>
-      <button class="ctrl-btn" id="nextBtn" title="下一台">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-      </button>
-    </div>
-    <div class="volume-row">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/></svg>
-      <input type="range" class="vol-slider" id="vol" min="0" max="100" value="80" />
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-    </div>
-  </section>
-  </div><!-- /lp-left -->
-
-  <!-- ===== 右栏 · 控制台 ===== -->
-  <div class="lp-right">
-
-  <!-- ===== 精选（一键直达） ===== -->
-  <div class="featured" id="featuredChips"></div>
-  <div class="tabbar" id="tabbar">
-    <button class="tab active" data-tab="favSection">收藏</button>
-    <button class="tab" data-tab="presetSection">预设</button>
-    <button class="tab" data-tab="globalSearchSection">全球</button>
-    <button class="tab" data-tab="customSection">定制</button>
-  </div>
-  <div class="panels" id="panels">
-
-  <!-- ===== 收藏 ===== -->
-  <section class="section scroll-anchor" id="favSection">
-    <div class="section-head">
-      <h2>收藏</h2>
-      <span class="count" id="favCount">0 个电台</span>
-    </div>
-    <div class="station-list" id="favList"></div>
-  </section>
-
-  <!-- ===== 预设电台（搜索式展示） ===== -->
-  <section class="section scroll-anchor" id="presetSection">
-    <div class="section-head">
-      <h2>预设电台</h2>
-      <span class="count" id="presetCount">0 个电台</span>
-    </div>
-    <div class="search-card">
-      <div class="search-row">
-        <input type="text" class="ios-input" id="presetKw" placeholder="搜索预设电台，如 环球 / 中国之声 / BBC" />
-        <button class="ios-btn" id="presetSearchBtn">搜索</button>
+  <!-- ===== 顶栏 ===== -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="brand-inner">
+          <div class="brand-text">
+            <h1 data-text="Waters Radio">Waters Radio</h1>
+          </div>
+        </div>
       </div>
-      <div class="hint" id="presetHint">输入关键词检索内置电台（已含 WLTW·纽约 等精选）。点击结果播放，点右侧心形收藏。</div>
+      <button class="nav-icon" id="navSettings" title="设置与维护" aria-label="设置" style="justify-self:end">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
     </div>
-    <div class="station-list" id="presetList"></div>
+  </nav>
+
+  <!-- ===== 左栏 · 播放面板 ===== -->
+  <section class="lp-left">
+    <div class="now-playing" id="nowSection">
+
+      <!-- 液晶屏：唱片 + 台名 + 状态 + 频谱（一体成型） -->
+      <div class="screen">
+        <div class="screen-main">
+          <div class="artwork" id="artwork">W</div>
+          <div class="screen-info">
+            <h1 class="np-name" id="nowName">未播放</h1>
+            <p class="np-meta" id="nowMeta">从右侧电台库选择一个电台开始收听</p>
+            <div class="np-status" id="status"><span class="dot"></span><span id="statusText">空闲</span></div>
+          </div>
+          <!-- 常显时钟：早期电子表风格（荧光绿数码字） -->
+          <div class="lcd-clock" aria-label="当前时间">
+            <div class="lcd-time" id="lcdTime">--:--</div>
+            <div class="lcd-date" id="lcdDate">--.--</div>
+          </div>
+        </div>
+        <div class="viz-wrap"><canvas class="viz" id="viz" width="600" height="46.8"></canvas></div>
+      </div>
+      <div class="np-repair" id="repairHint"></div>
+
+      <!-- 扬声器格栅（拟物装饰） -->
+      <div class="grille" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+
+      <!-- 大按键：上一台 / 播放 / 下一台 -->
+      <div class="controls">
+        <button class="ctrl-btn" id="prevBtn" title="上一个电台" aria-label="上一个电台">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="play-btn" id="playBtn" title="播放 / 暂停" aria-label="播放或暂停">
+          <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="ctrl-btn" id="nextBtn" title="下一个电台" aria-label="下一个电台">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+      </div>
+
+      <!-- 音量 -->
+      <div class="volume-row">
+        <button class="mute" id="muteBtn" title="静音" aria-label="静音">
+          <svg id="muteIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        </button>
+        <input type="range" class="vol-slider" id="vol" min="0" max="100" value="80" aria-label="音量" />
+      </div>
+
+      <!-- 收藏快捷台：跟随收藏列表，取前三个（音量键下方） -->
+      <div class="quick-favs" id="featuredChips"></div>
+    </div>
   </section>
 
-  <!-- ===== 全球搜索 ===== -->
-  <section class="section scroll-anchor" id="globalSearchSection">
-    <div class="section-head">
-      <h2>全球搜索</h2>
-      <span class="count">radio-browser.info</span>
-    </div>
-    <div class="search-card">
-      <div class="search-row">
-        <input type="text" class="ios-input" id="globalSearchKw" placeholder="搜索全球电台，如 BBC / NPR / jazz" />
-        <select class="ios-select" id="globalSearchCountry">
-          <option value="">所有国家</option>
-          <option value="China">中国</option>
-          <option value="United Kingdom">英国</option>
-          <option value="United States">美国</option>
-          <option value="Japan">日本</option>
-          <option value="Singapore">新加坡</option>
-        </select>
-        <button class="ios-btn" id="globalSearchBtn">搜索</button>
+  <!-- ===== 右栏 · 电台库 ===== -->
+  <section class="lp-right">
+    <div class="lib-panel">
+      <h2 class="lib-title">Station Library · 电台库</h2>
+
+      <!-- 分段控制器 -->
+      <div class="segmented" id="tabbar">
+        <span class="seg-thumb" id="segThumb"></span>
+        <button class="tab active" data-tab="favSection">收藏</button>
+        <button class="tab" data-tab="presetSection">全部电台</button>
+        <button class="tab" data-tab="globalSearchSection">全球</button>
+        <button class="tab" data-tab="customSection">定制</button>
       </div>
-      <div class="hint">联网搜索全球电台数据库。结果可点击播放或加入收藏。</div>
+
+      <div class="panels" id="panels">
+
+      <!-- ===== 收藏 ===== -->
+      <section class="section" id="favSection">
+        <div class="section-head">
+          <h2>收藏电台</h2>
+          <span class="count" id="favCount">0 个电台</span>
+        </div>
+        <div class="station-list" id="favList"></div>
+      </section>
+
+      <!-- ===== 全部电台 ===== -->
+      <section class="section" id="presetSection">
+        <div class="section-head">
+          <h2>全部电台</h2>
+          <span class="count" id="presetCount">0 个电台</span>
+        </div>
+        <div class="search-card">
+          <div class="search-row">
+            <input type="text" class="ios-input" id="presetKw" placeholder="搜索电台，如 环球 / 中国之声 / BBC" />
+            <button class="ios-btn" id="presetSearchBtn">搜索</button>
+          </div>
+          <div class="hint">内置 900+ 电台已全部列出，可直接点击播放；输入关键词可筛选。点右侧心形可收藏。</div>
+        </div>
+        <div class="station-list" id="presetList"></div>
+      </section>
+
+      <!-- ===== 全球搜索 ===== -->
+      <section class="section" id="globalSearchSection">
+        <div class="section-head">
+          <h2>全球搜索</h2>
+          <span class="count">radio-browser.info</span>
+        </div>
+        <div class="search-card">
+          <div class="search-row">
+            <input type="text" class="ios-input" id="globalSearchKw" placeholder="搜索全球电台，如 BBC / NPR / jazz" />
+            <select class="ios-select" id="globalSearchCountry">
+              <option value="">所有国家</option>
+              <option value="China">中国</option>
+              <option value="United Kingdom">英国</option>
+              <option value="United States">美国</option>
+              <option value="Japan">日本</option>
+              <option value="Singapore">新加坡</option>
+            </select>
+            <button class="ios-btn" id="globalSearchBtn">搜索</button>
+          </div>
+          <div class="hint">联网搜索全球电台数据库。结果可点击播放或加入收藏。</div>
+        </div>
+        <div class="station-list" id="globalSearchList"></div>
+      </section>
+
+      <!-- ===== 定制电台 ===== -->
+      <section class="section" id="customSection">
+        <div class="section-head">
+          <h2>定制电台</h2>
+          <span class="count">m3u8 / mp3</span>
+        </div>
+        <div class="custom-card">
+          <div class="search-row">
+            <input type="text" class="ios-input" id="customName" placeholder="电台名称（可选）" />
+            <input type="url" class="ios-input" id="customUrl" placeholder="https://...m3u8 或 .mp3" />
+            <button class="ios-btn" id="customPlay">播放</button>
+            <button class="ios-btn secondary" id="customFav">收藏</button>
+          </div>
+          <div class="hint">m3u8 (HLS) 使用 hls.js 解析；mp3 直连使用原生 audio 播放。数据仅存本机。</div>
+        </div>
+      </section>
+
+      </div><!-- /panels -->
     </div>
-    <div class="station-list" id="globalSearchList"></div>
   </section>
 
-  <!-- ===== 定制电台 ===== -->
-  <section class="section scroll-anchor" id="customSection">
-    <div class="section-head">
-      <h2>定制电台</h2>
-      <span class="count">m3u8 / mp3</span>
-    </div>
-    <div class="custom-card">
-      <div class="search-row">
-        <input type="text" class="ios-input" id="customName" placeholder="电台名称（可选）" style="max-width:220px" />
-        <input type="url" class="ios-input" id="customUrl" placeholder="https://...m3u8 或 .mp3" />
-        <button class="ios-btn" id="customPlay">播放</button>
-        <button class="ios-btn secondary" id="customFav">收藏</button>
-      </div>
-      <div class="hint">m3u8 (HLS) 使用 hls.js 解析；mp3 直连使用原生 audio 播放。数据仅存本机。</div>
-    </div>
-  </section>
-  </div><!-- /panels -->
-  </div><!-- /lp-right -->
 </div>
 
 <!-- ===== 设置后台模态弹窗 ===== -->
@@ -713,7 +1059,7 @@
   <div class="settings-modal-header">
     <h2>设置与维护</h2>
     <button class="settings-modal-close" id="settingsClose" title="关闭">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
   </div>
   <div class="settings-modal-body">
@@ -781,8 +1127,6 @@
     </details>
   </div>
 </aside>
-
-<!-- audio + hls.js -->
 <script src="./hls.min.js"></script>
 <script>
 /* ============================================================
@@ -915,6 +1259,308 @@ function $(s){return document.querySelector(s)}
 function $all(s){return document.querySelectorAll(s)}
 function isM3u8(url){return /\.m3u8($|\?)/i.test(url)}
 function isHttps(url){return /^https:\/\//i.test(url)}
+
+/* ============================================================
+ * HTTPS 流代理配置（Cloudflare Worker）· 多路热备
+ * ------------------------------------------------------------
+ * 作用：把 http:// 明文直播流经 Worker 转成 https://，
+ *       绕过浏览器「混合内容拦截」（HTTPS 页面禁止加载 http 媒体）。
+ *
+ * ⚠ 重要实测结论（2026-10）：
+ *   公共免费 CORS 代理（corsproxy.io、codetabs、allorigins、thingproxy、
+ *   cors.eu、proxy.cors.sh … 一共测了 30 多个）目前已全部无法中转音频流，
+ *   表现为 403 / 503 / 超时 / 直接拒绝。所以「靠自己部署的 Worker」是唯一
+ *   稳定可行的方案。
+ *
+ * 真正的「多路热备」做法：把你部署用的 worker/proxy.js 分别部署到
+ *   2~3 个不同的 Cloudflare 账号（都免费），把地址依次填进下面的
+ *   PROXY_URLS 数组。任意一路挂掉，健康分机制会自动切到下一路。
+ *
+ * 部署步骤见同目录 worker/部署说明.md（约 3 分钟，完全免费）。
+ * ============================================================ */
+/* 旧版单通道配置（保留兼容，填写后会自动并入 PROXY_URLS） */
+const PROXY = 'https://REPLACE-WITH-YOUR-WORKER.workers.dev';
+
+/* ---------- 自动 HTTPS 升级（无需部署任何代理即可用） ----------
+ * 经验：大量国内电台源其实「同时支持 http 和 https」，只是数据库里记的是 http。
+ * 例如 lhttp.qingting.fm、sk.cri.cn、http.qingting.fm 等，把协议换成 https
+ * 就能直接播放，完全不需要代理。
+ *
+ * 策略（按优先级）：
+ *   1. 若源本身是 https           → 直接用
+ *   2. 若是 http，先尝试 https 版本 → 探测成功就用（0 成本、无第三方依赖）
+ *   3. https 版本不可用且有代理    → 走 Worker 代理
+ *   4. 都没有                      → 提示用户配置代理
+ *
+ * 探测结果按 host 缓存，避免每次播放都重试。
+ * ------------------------------------------------------------ */
+const HTTPS_PROBE_CACHE = {};   // host -> true/false
+const HTTPS_PROBE_TTL = 30 * 60 * 1000;  // 30 分钟内不重复探测
+const _httpsProbeTime = {};
+
+function httpToHttps(url){
+  return url.replace(/^http:\/\//i, 'https://');
+}
+function hostOf(url){
+  try{ return new URL(url).hostname; }catch(e){ return ''; }
+}
+/* 同步判断：该 host 是否已确认支持 https */
+function httpsKnownGood(url){
+  const h = hostOf(url);
+  if(!h) return false;
+  if(HTTPS_PROBE_CACHE[h] === true) return true;
+  if(HTTPS_PROBE_CACHE[h] === false) return false;
+  return null;   // 未知，需要异步探测
+}
+/* 异步探测：http 地址换成 https 后能否取到媒体（HEAD/GET range） */
+function probeHttps(url){
+  const h = hostOf(url);
+  if(!h) return Promise.resolve(false);
+  const now = Date.now();
+  if(_httpsProbeTime[h] && (now - _httpsProbeTime[h]) < HTTPS_PROBE_TTL){
+    return Promise.resolve(HTTPS_PROBE_CACHE[h] === true);
+  }
+  const u2 = httpToHttps(url);
+  return fetch(u2, { method:'GET', headers:{ 'Range':'bytes=0-1' }, mode:'cors' })
+    .then(r => {
+      const ct = (r.headers.get('content-type')||'').toLowerCase();
+      const ok = r.ok && (ct.includes('audio') || ct.includes('mpeg') || ct.includes('m3u') ||
+                          ct.includes('octet-stream') || ct === '');
+      HTTPS_PROBE_CACHE[h] = ok;
+      _httpsProbeTime[h] = now;
+      return ok;
+    })
+    .catch(() => {
+      // CORS 拦截不代表源不可用；此时保守地标记为「可试」，让播放逻辑自己决定
+      HTTPS_PROBE_CACHE[h] = true;
+      _httpsProbeTime[h] = now;
+      return true;
+    });
+}
+
+/* 判断某地址是否需要走代理（仅 http:// 明文流需要） */
+function needProxy(url){
+  return typeof url === 'string' && /^http:\/\//i.test(url);
+}
+
+/* ============================================================
+ * 代理池（多路热备）
+ * ------------------------------------------------------------
+ * 目标：任何一个代理失效，立刻由下一个顶上，保证收音机不中断。
+ *
+ * 优先级：
+ *   [0] 自建 Cloudflare Worker（配了 PROXY 就放第一位，最稳）
+ *   [1..n] 公共 CORS 代理（免费备用，可能限速/失效，故放在后面）
+ *
+ * 机制：
+ *   · 每个代理有自己的「健康分」，失败一次扣分、成功加分
+ *   · 每次请求按健康分排序取最优；失败自动切下一个重试
+ *   · 健康分定期衰减，避免某个代理被永久拉黑后无法恢复
+ *   · 全部失败时，退回直连原地址（至少不崩）
+ * ============================================================ */
+/* ============================================================
+ * 自建中转站（Worker）地址表 —— 这是唯一稳定可靠的通道
+ * ------------------------------------------------------------
+ * 实测结论：公共免费 CORS 代理（corsproxy.io / codetabs / allorigins /
+ * thingproxy / cors.eu / proxy.cors.sh 等 30+ 个）全部无法中转音频流，
+ * 表现为 403 / 503 / 超时 / 直接拒绝。因此「自己部署的 Worker」才是主力。
+ *
+ * 想真正做到「多路热备」，只需把你部署时用的 worker.js 分别部署到
+ * 2~3 个不同的 Cloudflare 账号（免费），把地址依次填进下面数组即可。
+ * 任何一个挂掉，健康分机制会自动切到下一个，收音机不中断。
+ *
+ * 部署方法见同目录 worker/部署说明.md（3 分钟，免费）。
+ * ============================================================ */
+const PROXY_URLS = [
+  // 'https://waters-radio.your-name.workers.dev',      // 主通道（账号 A）
+  // 'https://waters-radio-b.your-name.workers.dev',    // 备用通道（账号 B）
+  // 'https://waters-radio-c.your-name.workers.dev'     // 备用通道（账号 C）
+];
+
+/* 兼容旧配置：单个 PROXY 常量若已填写，自动并入通道表 */
+(function(){
+  try{
+    if(typeof PROXY === 'string' && /^https?:\/\//i.test(PROXY) && PROXY.indexOf('REPLACE-WITH') < 0){
+      if(PROXY_URLS.indexOf(PROXY) < 0) PROXY_URLS.unshift(PROXY);
+    }
+  }catch(e){}
+})();
+
+/* 公共代理模板：{u} 会被替换成 URL 编码后的目标地址
+ * 说明：这些免费公共代理实测成功率极低，仅作「万一」的最后兜底，
+ *       不保证可用；主力始终是上面自建的 Worker 通道。 */
+const PUBLIC_PROXIES = [
+  { name:'corsproxy.io',   make:u => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
+  { name:'codetabs',       make:u => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
+  { name:'allorigins',     make:u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+  { name:'thingproxy',     make:u => 'https://thingproxy.freeboard.io/fetch/' + u },
+  { name:'cors.eu',        make:u => 'https://cors.eu.org/' + u },
+  { name:'proxy.cors.sh',  make:u => 'https://proxy.cors.sh/' + u }
+];
+
+/* 组装最终的代理列表：
+ *   ① 自建 Worker 通道（可多路，按填写顺序，主导热备就靠它们）
+ *   ② 公共 CORS 代理（兜底，随时可能失效）
+ * 每路都带 owned 标记：自建通道初始健康分 100，公共代理只有 45
+ * （因为实测证明公共代理基本不可用，不该被优先选中）。 */
+function buildProxyList(){
+  const list = [];
+  PROXY_URLS.forEach((u, i) => {
+    const clean = String(u).replace(/\/+$/,'');
+    if(!/^https?:\/\//i.test(clean)) return;
+    list.push({
+      name: PROXY_URLS.length > 1 ? ('自建通道' + (i+1)) : '自建通道',
+      make: t => clean + '/?u=' + encodeURIComponent(t),
+      owned: true
+    });
+  });
+  PUBLIC_PROXIES.forEach(p => list.push({ name:p.name, make:p.make, owned:false }));
+  return list;
+}
+const PROXY_LIST = buildProxyList();
+
+/* 健康分与失败计数（0~100）：
+ *   · 自建通道 = 100（自己的 Worker，最可靠，优先用）
+ *   · 公共代理 = 45（实测基本不可用，只作最后的兜底，不该被优先选中） */
+const PROXY_HEALTH = {};
+const PROXY_FAILS  = {};
+PROXY_LIST.forEach(p => { PROXY_HEALTH[p.name] = p.owned ? 100 : 45; PROXY_FAILS[p.name] = 0; });
+let PROXY_ACTIVE = PROXY_LIST.length ? PROXY_LIST[0].name : null;   // 当前主用
+
+/* 是否配置了任何自建通道（用于界面提示与降级决策） */
+const HAS_OWNED_PROXY = PROXY_LIST.some(p => p.owned);
+
+function proxyBump(name, ok){
+  if(ok){
+    PROXY_HEALTH[name] = Math.min(100, (PROXY_HEALTH[name]||45) + 15);
+    PROXY_FAILS[name] = 0;
+  } else {
+    PROXY_HEALTH[name] = Math.max(0, (PROXY_HEALTH[name]||45) - 35);
+    PROXY_FAILS[name] = (PROXY_FAILS[name]||0) + 1;
+  }
+}
+/* 按健康分排序（同分时自建优先） */
+function proxiesSorted(){
+  return PROXY_LIST.slice().sort((a,b) => {
+    const ha = PROXY_HEALTH[a.name]||0, hb = PROXY_HEALTH[b.name]||0;
+    if(ha !== hb) return hb - ha;
+    return (b.owned?1:0) - (a.owned?1:0);
+  });
+}
+/* 慢衰减：每 5 分钟给所有代理回一点分，避免被永久拉黑 */
+setInterval(() => {
+  Object.keys(PROXY_HEALTH).forEach(n => {
+    PROXY_HEALTH[n] = Math.min(100, PROXY_HEALTH[n] + 5);
+  });
+}, 5 * 60 * 1000);
+
+/* ============================================================
+ * 启动探活：给每一路代理做一次真实探测（拿一个小文件），
+ * 把「真的能通」的那一路顶上来，避免第一次播放就撞到死通道。
+ * 探测结果只影响排序，不改配置。
+ * ============================================================ */
+function probeProxyPool(){
+  if(!PROXY_LIST.length) return;
+  // 用一个体积很小的公开音频/文本做探针；失败则跳过该路
+  const PROBE_URL = 'http://lhttp.qingting.fm/live/4984/64k.mp3';
+  PROXY_LIST.forEach(p => {
+    let done = false;
+    const finish = (ok) => { if(done) return; done = true; proxyBump(p.name, ok); };
+    try{
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => { ctrl.abort(); finish(false); }, 6000);
+      fetch(p.make(PROBE_URL), { method:'GET', headers:{ 'Range':'bytes=0-64' }, signal: ctrl.signal })
+        .then(r => { clearTimeout(timer); finish(r.ok || r.status === 206); })
+        .catch(() => { clearTimeout(timer); finish(false); });
+    }catch(e){ finish(false); }
+  });
+}
+
+/* 用最优代理包一层地址 */
+function proxify(url){
+  if(!needProxy(url)) return url;                     // 已是 https，无需代理
+  const list = proxiesSorted();
+  if(!list.length) return url;                        // 一个代理都没有，原样返回
+  PROXY_ACTIVE = list[0].name;
+  return list[0].make(url);
+}
+/* 用指定代理包一层地址（失败重试时用） */
+function proxifyWith(url, proxyName){
+  const p = PROXY_LIST.filter(x => x.name === proxyName)[0];
+  return p ? p.make(url) : url;
+}
+
+/* ============================================================
+ * 带故障转移的抓取：依次尝试各代理，直到有一个成功
+ * 成功返回 { ok:true, res, proxy }；全失败返回 { ok:false }
+ * ============================================================ */
+async function fetchViaProxy(url, opts){
+  opts = opts || {};
+  const list = proxiesSorted();
+  for(let i=0;i<list.length;i++){
+    const p = list[i];
+    const target = p.make(url);
+    try{
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), opts.timeout || 9000);
+      const r = await fetch(target, Object.assign({}, opts, { signal: ctrl.signal }));
+      clearTimeout(timer);
+      if(r.ok || r.status === 206){
+        proxyBump(p.name, true);
+        if(PROXY_ACTIVE !== p.name){
+          PROXY_ACTIVE = p.name;
+          if(typeof log === 'function') log(`【代理切换】当前使用：${p.name}`,'info');
+        }
+        return { ok:true, res:r, proxy:p.name };
+      }
+      // 5xx 视为代理自身问题，降分继续试下一个
+      proxyBump(p.name, false);
+      if(typeof log === 'function') log(`【代理失败】${p.name} 返回 ${r.status}，切换下一个`,'warn');
+    }catch(e){
+      proxyBump(p.name, false);
+      if(typeof log === 'function') log(`【代理失败】${p.name}：${(e&&e.message)||e}，切换下一个`,'warn');
+    }
+  }
+  return { ok:false, proxy:null };
+}
+
+/* 该地址在浏览器里能否直接播放（https，或可升级 https，或代理已就绪） */
+function isPlayable(url){
+  if(isHttps(url)) return true;
+  if(needProxy(url) && PROXY_LIST.length) return true;
+  if(needProxy(url) && httpsKnownGood(url) === true) return true;
+  return false;
+}
+/* 后台预热：把电台库里所有 http 主播的 host 挨个探测一次 https 支持，
+ * 串行 + 间隔执行，避免瞬间打出几十个请求把网络打满 */
+function warmHttpsProbe(){
+  try{
+    const hosts = new Set();
+    const collect = (arr) => {
+      (arr||[]).forEach(s => {
+        const urls = [s.url].concat(s.sources||[]);
+        urls.forEach(u => { if(u && needProxy(u)){ const h = hostOf(u); if(h) hosts.add(h); } });
+      });
+    };
+    if(typeof PRESET_STATIONS !== 'undefined') collect(PRESET_STATIONS);
+    if(typeof STATIONS !== 'undefined') collect(STATIONS);
+    const list = Array.from(hosts).filter(h => HTTPS_PROBE_CACHE[h] === undefined);
+    if(!list.length) return;
+    log(`【预热】开始探测 ${list.length} 个 http 主机的 https 支持情况`,'info');
+    let i = 0;
+    const next = () => {
+      if(i >= list.length) {
+        const good = Object.keys(HTTPS_PROBE_CACHE).filter(k => HTTPS_PROBE_CACHE[k] === true).length;
+        log(`【预热】完成：${good} 个主机支持 https 直连`,'ok');
+        try{ if(typeof renderNow === 'function') renderNow(); }catch(e){}
+        return;
+      }
+      const h = list[i++];
+      probeHttps('http://' + h + '/').catch(()=>{}).then(() => setTimeout(next, 220));
+    };
+    next();
+  }catch(e){ /* 预热失败不影响主流程 */ }
+}
 function toast(msg, kind='ok'){
   const t = document.createElement('div');
   t.className = 'toast '+kind;
@@ -973,6 +1619,7 @@ let stallRetryCount = 0;        // 宽容期内 stalled 次数
 let switchHistory = [];         // 换源时间戳数组（用于窗口计数）
 let lastSwitchTime = 0;         // 上次换源时间戳
 let hlsReconnectCount = 0;      // HLS 非致命错误重连计数
+let proxyFailoverCount = 0;     // 本次播放内的代理故障转移次数（防止无限切换）
 let currentHlsConfig = null;    // 当前 HLS 配置（用于重连）
 
 function clearTimers(){
@@ -1131,6 +1778,33 @@ async function onSourceFailed(reason, errObj, hlsData){
 
   // 记录详细日志（时间戳、链接、错误码、状态码、换源次数）
   log(`【播放异常】${errInfo.label} reason=${reason} url=${failedUrl.slice(0,60)} http=${errInfo.httpStatus||'-'} code=${errObj&&errObj.code||'-'} switchCount=${switchHistory.length}`,'warn');
+
+  // ===== 优先尝试「代理故障转移」=====
+  // 如果当前源是走代理的（http 明文流），失败很可能是这个代理挂了。
+  // 不急着换台，先按健康分切到下一个代理重试 —— 这是多路热备的核心价值。
+  if(needProxy(failedUrl) && PROXY_LIST.length > 1 && proxyFailoverCount < PROXY_LIST.length){
+    const curProxy = PROXY_ACTIVE;
+    proxyBump(curProxy, false);          // 当前代理扣分
+    proxyFailoverCount++;
+    const nextList = proxiesSorted().filter(p => p.name !== curProxy);
+    if(nextList.length){
+      const nx = nextList[0];
+      log(`【代理切换】${curProxy} 失败，改用 ${nx.name} 重试 (${proxyFailoverCount}/${PROXY_LIST.length})`,'warn');
+      PROXY_ACTIVE = nx.name;
+      clearTimers();
+      try{audio.pause()}catch(e){}
+      if(state.hls){ try{state.hls.destroy()}catch(e){}; state.hls=null; }
+      audio.removeAttribute('src');
+      setTimeout(()=>{
+        if(state.current){
+          setStatus('buffering','切换代理重连...');
+          startConnectTimer();
+          loadSource(nx.make(failedUrl));
+        }
+      }, 800);
+      return;
+    }
+  }
 
   // 如果是可重试类型且还有重试次数 → 不换源，先重试
   if(errInfo.shouldRetry && hlsReconnectCount < HLS_RECONNECT_MAX){
@@ -1563,6 +2237,7 @@ async function quickValidateM3u8(url){
 
 /* 带防盗链请求头的加载（403 重试用） */
 function loadSourceWithAntiLeech(url){
+  url = proxify(url);
   if(isM3u8(url)){
     if(window.Hls && Hls.isSupported()){
       state.hls = new Hls({
@@ -1606,6 +2281,7 @@ function loadSourceWithAntiLeech(url){
 
 /* ===== 加载源（HLS 或原生 audio） ===== */
 function loadSource(url){
+  url = proxify(url);
   if(isM3u8(url)){
     if(window.Hls && Hls.isSupported()){
       currentHlsConfig = {
@@ -1716,6 +2392,7 @@ async function backgroundPrecheck(currentSt){
 /* 尝试播放一个链接，在 timeout 内未 playing 则判定失败 */
 function tryPlayWithTimeout(st, timeout){
   return new Promise((resolve) => {
+    const playUrl = proxify(st.url);   // http 明文流经代理转 https
     let settled = false;
     let timer = null;
     let hls = null;
@@ -1769,7 +2446,7 @@ function tryPlayWithTimeout(st, timeout){
     }, timeout);
 
     // 实际加载
-    if(isM3u8(st.url)){
+    if(isM3u8(playUrl)){
       if(window.Hls && Hls.isSupported()){
         hls = new Hls({
           enableWorker:true, lowLatencyMode:false, backBufferLength:90,
@@ -1781,7 +2458,7 @@ function tryPlayWithTimeout(st, timeout){
           maxBufferLength: 30, maxMaxBufferLength: 60,
           maxStallRetry: 5
         });
-        hls.loadSource(st.url);
+        hls.loadSource(playUrl);
         hls.attachMedia(audio);
         hls.on(Hls.Events.MANIFEST_PARSED, ()=>{ audio.play().catch(()=>{}); });
         hls.on(Hls.Events.ERROR, (e,d)=>{
@@ -1789,13 +2466,13 @@ function tryPlayWithTimeout(st, timeout){
           // 非致命错误不处理，hls.js 内部自动重试
         });
       } else if(audio.canPlayType('application/vnd.apple.mpegurl')){
-        audio.src = st.url;
+        audio.src = playUrl;
         audio.play().catch(()=>{});
       } else {
         settled = true; cleanup(); resolve(false);
       }
     } else {
-      audio.src = st.url;
+      audio.src = playUrl;
       audio.play().catch(()=>{});
     }
   });
@@ -1837,20 +2514,55 @@ function playStation(st, autoReplay=true){
     return;
   }
 
-  if(!isHttps(playUrl)){ toast('链接非 HTTPS，可能被浏览器拦截','err'); log('非 HTTPS 链接：'+playUrl,'warn'); }
+  if(!isHttps(playUrl)){
+    // http 明文流：优先尝试自动升级为 https（大量国内源其实支持，无需代理）
+    log(`【自动升级】检测到 http 流，先试 https 直连（${PROXY_LIST.length} 个代理热备中）`,'info');
+  }
 
   // 重置运行时状态
   playStartTime = 0;
   stallRetryCount = 0;
   hlsReconnectCount = 0;
+  proxyFailoverCount = 0;
 
   setStatus('buffering','连接中...');
   startConnectTimer();
-  loadSource(playUrl);
+
+  // 先解析出真正要播放的地址，再加载
+  resolvePlayUrl(playUrl).then(finalUrl => {
+    if(!state.current || state.current.url !== playUrl) return;   // 播放目标已切换，放弃
+    loadSource(finalUrl);
+  }).catch(() => {
+    loadSource(proxify(playUrl));
+  });
 
   state.isPlaying = true;
   updateBtn();
   startViz();
+}
+
+/* ---------- 解析最终播放地址（http → https 自动升级 → 代理池热备兜底） ---------- */
+async function resolvePlayUrl(url){
+  if(isHttps(url)){
+    return url;                   // 已是 https，直连
+  }
+  if(!needProxy(url)){
+    return url;
+  }
+  // 1) 若该 host 已确认支持 https，直接升级
+  if(httpsKnownGood(url) === true){
+    return httpToHttps(url);
+  }
+  // 2) 未知 → 探测一次
+  let ok = false;
+  try{ ok = await probeHttps(url); }catch(e){ ok = false; }
+  if(ok){
+    log(`【自动升级】${hostOf(url)} 支持 https，直连播放（无需代理）`,'ok');
+    return httpToHttps(url);
+  }
+  // 3) https 不可用 → 走代理池（自动选健康分最高的那个）
+  log(`【代理】${hostOf(url)} 不支持 https，改走代理池（共 ${PROXY_LIST.length} 路热备）`,'info');
+  return proxify(url);
 }
 
 /* 链接完整性校验 */
@@ -1942,9 +2654,9 @@ function updateBtn(){
     icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
     $('#artwork').classList.remove('playing');
   }
-  // 收藏按钮
+  // 收藏按钮（播放面板已移除该按钮，仍兼容保留）
   const favBtn = $('#favBtn');
-  favBtn.classList.toggle('on', isFav(state.current));
+  if(favBtn) favBtn.classList.toggle('on', isFav(state.current));
   // 列表高亮
   $all('.station-item').forEach(el=>{
     el.classList.toggle('playing', state.current && el.dataset.url===state.current.url);
@@ -1959,29 +2671,202 @@ function startViz(){
       audioCtx = new (window.AudioContext||window.webkitAudioContext)();
       source = audioCtx.createMediaElementSource(audio);
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
+      analyser.fftSize = 1024;                // 提高频率分辨率（binHz≈43Hz），低频段才分得开
+      analyser.smoothingTimeConstant = 0.75;  // 底层平滑，避免抖动
       source.connect(analyser);
       analyser.connect(audioCtx.destination);
     }
     const c = $('#viz'); const ctx = c.getContext('2d');
     const data = new Uint8Array(analyser.frequencyBinCount);
+
+    /* ===== 频谱动态范围增强 =====
+     * 目标：让低、中、高频整条范围都能明显起伏，而不是只有低频在动。
+     * 做法：
+     *  1. 对数分频：21 根柱覆盖 40Hz~16kHz，从左到右＝频率由低到高，
+     *     低频带宽窄、高频带宽宽，符合人耳感知，也避免高频段几乎取不到数据。
+     *  2. 频段取峰值：每根柱取该频段内多个 bin 的峰值（而非单点采样），
+     *     保证窄频段也有稳定响应。
+     *  3. 增益补偿：高频能量天然比低频低很多，按频段加不同的补偿系数
+     *     （tilt），把整条曲线的量级拉平，高频也能"动起来"。
+     *  4. 平滑 + 非对称包络：上升快、下落慢（类似真实频谱仪的余晖），
+     *     视觉更顺滑、不闪。
+     * ============================================ */
+    const BARS = 21;                            // 16 根增加三分之一 → 21 根（16×4/3≈21.3）
+    const MIN_HZ = 45, MAX_HZ = 12000;         // 上限收到 12kHz：16kHz 以上音乐几乎没能量，柱会"死"
+    const peak = new Float32Array(BARS);      // 平滑后的柱高 0~1
+    const decay = 0.16;                       // 下落速度
+    const attack = 0.55;                      // 上升速度
+
+    // 预计算每根柱对应的 bin 区间（对数分布）
+    const bandRange = [];
+    (function(){
+      const nyq = audioCtx.sampleRate / 2;
+      const binHz = nyq / data.length;
+      const logMin = Math.log10(MIN_HZ), logMax = Math.log10(MAX_HZ);
+      for(let i=0;i<BARS;i++){
+        const f0 = Math.pow(10, logMin + (logMax-logMin)*(i/BARS));
+        const f1 = Math.pow(10, logMin + (logMax-logMin)*((i+1)/BARS));
+        let b0 = Math.floor(f0/binHz), b1 = Math.ceil(f1/binHz);
+        if(b0 < 0) b0 = 0;
+        if(b1 <= b0) b1 = b0 + 1;             // 至少取一个 bin
+        if(b1 > data.length) b1 = data.length;
+        bandRange.push([b0, Math.max(b1, b0+1)]);
+      }
+    })();
+
+    // 最低可见高度：保证最右那根（最高频、能量最弱）也始终有跳动，不会"死"在那里
+    const FLOOR_MIN = 0.10;   // 静音时也有 10% 高的活性底噪
+    const FLOOR_ACT = 0.10;   // 实际播放时额外的最低活性
+
+    /* ===== 自动增益（AGC）：避免大部分柱子长时间顶在天花板 =====
+     * 原问题：`bandGain` 是固定的高频补偿系数，遇到响度大的节目时
+     * 整条曲线整体抬高，`if(v>1) v=1` 之后很多柱子长期贴着顶端，
+     * 频谱看起来"糊成一片"、失去起伏。
+     * 做法：跟踪"音乐最有代表的上四分位音量"作为参考电平，
+     * 用一个缓慢变化的增益把它归一到目标电平，于是——
+     *   - 节目响 → 整体压低，不会顶天花板；
+     *   - 节目轻 → 整体抬起，不会全贴底；
+     * 同时给增益设上下限，避免把安静段落硬拉成满格。
+     * ============================================================ */
+    const AGC_TARGET = 0.62;  // 期望的"上限参考电平"（0~1）
+    const AGC_MIN = 0.45, AGC_MAX = 2.6;   // 增益上下限
+    let agcRef = 0.30;        // 平滑后的参考电平（启动值取一个中性值）
+    const AGC_UP = 0.02;      // 参考电平上升速度（慢，避免喘）
+    const AGC_DOWN = 0.06;    // 参考电平下降速度（稍快，跟得上安静段）
+
+    // 老式车载频谱的琥珀色系（顶部亮橙 → 底部深琥珀）
+    const CORE_TOP = '#ffd47a', CORE_MID = '#e79a35', CORE_BOT = '#9c5a12';
+    // 是否支持 ctx.filter（旧内核可能没有，降级为纯叠色虚化）
+    const blurOK = (function(){ try{ return typeof ctx.filter === 'string'; }catch(e){ return false; } })();
+    // 单调递增的秒计时（用 rAF 时间戳，不依赖 Date）
+    let _t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+    function nowSec(){
+      const t = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+      return (t - _t0) / 1000;
+    }
+
+    // 顶端圆角、底端直角的柱形路径（半径不超过柱宽一半，也不超过柱高）
+    function roundTopRect(g, x, y, w, h, r){
+      if(h <= 0){ g.rect(x, y, w, h); return; }
+      r = Math.max(0, Math.min(r, w/2, h));
+      g.moveTo(x, y+h);
+      g.lineTo(x, y+r);
+      g.quadraticCurveTo(x, y, x+r, y);
+      g.lineTo(x+w-r, y);
+      g.quadraticCurveTo(x+w, y, x+w, y+r);
+      g.lineTo(x+w, y+h);
+      g.closePath();
+    }
+
+    function bandGain(i){
+      // 频段倾斜：只做"轻微"的高频补偿，把整条曲线粗糙拉平即可
+      // （整体电平由上面的 AGC 自动归一，这里过强会导致高频顶天花板）
+      const t = i / (BARS - 1);
+      return 0.70 + Math.pow(t, 1.5) * 0.95;   // 0 号柱 0.70 倍 → 最后一根约 1.65 倍
+    }
+
     function draw(){
       vizRAF = requestAnimationFrame(draw);
       analyser.getByteFrequencyData(data);
       const w = c.width = c.clientWidth; const h = c.height = c.clientHeight;
       ctx.clearRect(0,0,w,h);
-      const bars = 48;
-      const step = Math.floor(data.length/bars);
-      const bw = w/bars;
-      for(let i=0;i<bars;i++){
-        const v = data[i*step]||0;
-        const bh = Math.max(2,(v/255)*h);
-        const x = i*bw + bw/2;
-        const grad = ctx.createLinearGradient(0,h-bh,0,h);
-        grad.addColorStop(0,'#fa233b'); grad.addColorStop(1,'#ff9f0a');
-        ctx.fillStyle = grad;
-        ctx.fillRect(x-2, h-bh, 4, bh);
+      const bw = w/BARS;
+      const fillW = Math.max(8, bw*0.9);                 // 柱宽（略留缝，老式车机也是分离的方柱）
+
+      // ===== 先算一遍原始电平（含频段倾斜），用于 AGC 参考 =====
+      const raw = new Float32Array(BARS);
+      for(let i=0;i<BARS;i++){
+        const [b0, b1] = bandRange[i];
+        let maxv = 0;
+        for(let b=b0;b<b1;b++){ if(data[b] > maxv) maxv = data[b]; }
+        raw[i] = (maxv/255) * bandGain(i);
       }
+      // 参考电平＝排序后的上四分位（比平均值更贴近"最活跃的那批柱子"）
+      const sorted = Array.prototype.slice.call(raw).sort(function(a,b){ return a-b; });
+      const q = sorted[Math.min(BARS-1, Math.floor(BARS*0.75))] || 0;
+      agcRef += (q - agcRef) * (q > agcRef ? AGC_UP : AGC_DOWN);
+      // 增益：把参考电平归一到目标；限幅在 [AGC_MIN, AGC_MAX]
+      let agc = agcRef > 0.02 ? (AGC_TARGET / agcRef) : 1;
+      if(agc < AGC_MIN) agc = AGC_MIN;
+      if(agc > AGC_MAX) agc = AGC_MAX;
+
+      for(let i=0;i<BARS;i++){
+        // 1) 已在上面算好含倾斜的原始电平
+        let v = raw[i] * agc;
+        if(v > 1) v = 1;
+        // 3) 抬高底部曲线，让安静段也有细微起伏
+        v = Math.pow(v, 0.78);
+        // 3b) 最低活性：最右（最高频）那根也永远在动，绝不会"死"住
+        const floor = FLOOR_MIN + FLOOR_ACT * (0.5 + 0.5*Math.sin(nowSec()*3.1 + i*1.7));
+        if(v < floor) v = floor;
+        // 4) 非对称平滑：上升快、下落慢（老式仪表余晖感）
+        const target = v;
+        peak[i] += (target - peak[i]) * (target > peak[i] ? attack : decay);
+        let bh = peak[i] * h;
+        if(bh < 3) bh = 3;
+
+        const x = i*bw + (bw - fillW)/2;
+        const y = h-bh;
+
+        /* ---- 老式车载频谱显示器风格 ----
+         * 特征：柱体粗颗粒（磨砂塑料/段码管质感）+ 边缘虚化拖影 + 顶端更亮 */
+        // A. 外层：模糊光晕（把柱体画大一点、低透明度，制造虚化扩散）
+        ctx.save();
+        if(blurOK){ ctx.filter = 'blur(1.6px)'; }
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = CORE_TOP;
+        ctx.beginPath();
+        roundTopRect(ctx, x-1, y-1, fillW+2, bh+1, Math.min((fillW+2)/2, bh));
+        ctx.fill();
+        ctx.restore();
+
+        // B. 主体：竖向渐变（顶部亮橙 → 底部深琥珀）
+        const grad = ctx.createLinearGradient(0,y,0,h);
+        grad.addColorStop(0,   CORE_TOP);
+        grad.addColorStop(0.45, CORE_MID);
+        grad.addColorStop(1,   CORE_BOT);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        roundTopRect(ctx, x, y, fillW, bh, Math.min(fillW/2, bh));
+        ctx.fill();
+
+        // C. 颗粒感：竖条上叠一层随机噪点（老式屏的"雪花"/磨砂）
+        ctx.save();
+        ctx.beginPath();
+        roundTopRect(ctx, x, y, fillW, bh, Math.min(fillW/2, bh));
+        ctx.clip();
+        ctx.globalAlpha = 0.16;
+        for(let g=0; g<Math.max(4, bh/1.6); g++){
+          const gx = x + Math.random()*fillW;
+          const gy = y + Math.random()*bh;
+          const gs = 0.7 + Math.random()*1.4;
+          ctx.fillStyle = Math.random() > 0.5 ? '#fff3d6' : '#7a4d10';
+          ctx.fillRect(gx, gy, gs, gs);
+        }
+        ctx.restore();
+
+        // D. 顶端高光：老式屏柱顶那道亮线
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#ffe9b8';
+        ctx.fillRect(x+1, y, Math.max(1, fillW-2), 1);
+        ctx.restore();
+      }
+
+      // E. 整屏扫描线 + 轻微噪点，强化 CRT/段码管质感
+      ctx.save();
+      ctx.globalAlpha = 0.10;
+      ctx.fillStyle = '#2a1c0e';
+      for(let sy=0; sy<h; sy+=3){ ctx.fillRect(0, sy, w, 1); }
+      ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.05;
+      for(let n=0; n<w*0.5; n++){
+        const nx = Math.random()*w, ny = Math.random()*h;
+        ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#000';
+        ctx.fillRect(nx, ny, 1, 1);
+      }
+      ctx.restore();
     }
     draw();
   }catch(e){ /* ignore */ }
@@ -2020,9 +2905,22 @@ function prevNext(dir){
 function renderNow(){
   const cur = state.current;
   $('#nowName').innerText = cur ? cur.name : '未播放';
-  $('#nowMeta').innerHTML = cur
-    ? `<a href="${cur.url}" target="_blank" rel="noopener">${escapeHtml(cur.url)}</a>`
-    : '从下方选择电台，或粘贴直播流 URL';
+  if(cur){
+    const isHttp = needProxy(cur.url);
+    const httpsOk = isHttp ? (httpsKnownGood(cur.url) === true) : true;
+    const proxied = isHttp && !httpsOk;
+    const ownedCount = PROXY_LIST.filter(p => p.owned).length;
+    const badge = httpsOk
+      ? (isHttp ? '<span class="proxy-badge ok" title="该源支持 https，已自动升级直连播放">https 直连</span>' : '')
+      : (proxied
+          ? (ownedCount
+              ? `<span class="proxy-badge ok" title="http 明文流经自建中转站（${ownedCount} 路热备，当前 ${PROXY_ACTIVE||'-'}）">中转·${ownedCount}路热备</span>`
+              : `<span class="proxy-badge warn" title="公共代理实测多已失效，建议部署自建 Worker（见 worker/部署说明.md）">公共代理·${PROXY_LIST.length}路</span>`)
+          : '');
+    $('#nowMeta').innerHTML = badge + `<a href="${cur.url}" target="_blank" rel="noopener">${escapeHtml(cur.url)}</a>`;
+  } else {
+    $('#nowMeta').innerHTML = '从下方选择电台，或粘贴直播流 URL';
+  }
 }
 
 // SVG 图标
@@ -2066,13 +2964,18 @@ function renderPresets(){
   const box = $('#presetList');
   box.innerHTML = '';
   $('#totalStations').innerText = state.stations.length + state.favs.length;
-  // 不全量展示，仅在搜索后展示
-  $('#presetCount').innerText = `${state.stations.length} 个电台（搜索后显示）`;
+  // 默认直接展示全部电台（搜索作为过滤，而非前置门槛）
+  $('#presetCount').innerText = `${state.stations.length} 个电台`;
+  if(!state.stations.length){
+    box.innerHTML = '<div class="empty-state">电台库为空。</div>';
+    return;
+  }
+  state.stations.forEach(s => box.appendChild(stationCard(s)));
 }
 
 /*
  * 预设电台库本地搜索（在 FULL_PRESET_STATIONS 中模糊匹配）
- * 与 searchSection 展示逻辑一致：搜索结果显示为电台列表，点击播放，点击心形收藏
+ * 空关键词 = 展示全部；输入关键词 = 过滤筛选
  */
 function doPresetSearch(){
   const kw = $('#presetKw').value.trim().toLowerCase();
@@ -2089,7 +2992,7 @@ function doPresetSearch(){
       return sb - sa;
     });
   }
-  $('#presetCount').innerText = `${all.length} 个电台（搜索 ${kw?'匹配 '+results.length+' 条':'请搜索'}）`;
+  $('#presetCount').innerText = kw ? `匹配 ${results.length} 条 / 共 ${all.length} 个电台` : `${all.length} 个电台`;
   if(!results.length){
     box.innerHTML = '<div class="empty-state">未找到匹配的电台。</div>';
     return;
@@ -2157,13 +3060,22 @@ async function doGlobalSearch(){
  * 对 m3u8 做简单索引解析校验
  */
 async function checkUrl(url){
+  // http 明文流：优先按「自动升级 https」后的地址检查，否则才考虑代理
+  let probeUrl;
+  if(isHttps(url)){
+    probeUrl = url;
+  } else if(httpsKnownGood(url) === true || await probeHttps(url)){
+    probeUrl = httpToHttps(url);
+  } else {
+    probeUrl = proxify(url);
+  }
   // 1. HTTP 连通性检查
   let httpOk = false;
   let httpStatus = 0;
   try{
     const ctrl = new AbortController();
     const timer = setTimeout(()=>ctrl.abort(), 5000);
-    const r = await fetch(url, {method:'HEAD', signal:ctrl.signal, mode:'cors'});
+    const r = await fetch(probeUrl, {method:'HEAD', signal:ctrl.signal, mode:'cors'});
     clearTimeout(timer);
     httpOk = r.ok;
     httpStatus = r.status;
@@ -2172,7 +3084,7 @@ async function checkUrl(url){
     try{
       const ctrl = new AbortController();
       const timer = setTimeout(()=>ctrl.abort(), 5000);
-      const r = await fetch(url, {method:'GET', signal:ctrl.signal, headers:{'Range':'bytes=0-1'}, mode:'cors'});
+      const r = await fetch(probeUrl, {method:'GET', signal:ctrl.signal, headers:{'Range':'bytes=0-1'}, mode:'cors'});
       clearTimeout(timer);
       httpOk = r.ok || r.status === 206;
       httpStatus = r.status;
@@ -2184,7 +3096,7 @@ async function checkUrl(url){
     try{
       const ctrl = new AbortController();
       const timer = setTimeout(()=>ctrl.abort(), 5000);
-      const r = await fetch(url, {signal:ctrl.signal, mode:'cors'});
+      const r = await fetch(probeUrl, {signal:ctrl.signal, mode:'cors'});
       clearTimeout(timer);
       if(!r.ok) return false;
       const text = await r.text();
@@ -2344,7 +3256,8 @@ function bind(){
   $('#vol').oninput = e => { audio.volume = e.target.value/100; saveStr(LS.vol, String(audio.volume)); };
   updateMuteIcon();
 
-  $('#favBtn').onclick = ()=> state.current && toggleFav(state.current);
+  var favBtnEl = $('#favBtn');
+  if(favBtnEl) favBtnEl.onclick = ()=> state.current && toggleFav(state.current);
   // 设置弹窗：打开/关闭
   const openSettings = ()=>{
     $('#settingsOverlay').classList.add('open');
@@ -2497,6 +3410,20 @@ function init(){
   // 打开即加载界面，不自动播放；由用户自行点击预设/收藏电台开始播放
   log('界面已加载，点击任意电台即可开始播放', 'ok');
 
+  // 代理池探活：启动时先给每一路中转站做一次小探测，
+  // 把真的能用的那一路顶上来，避免第一次点播就撞到死通道。
+  if(PROXY_LIST.length){
+    setTimeout(probeProxyPool, 1200);
+    setTimeout(() => {
+      if(!HAS_OWNED_PROXY){
+        log('提示：检测到 ' + PROXY_LIST.filter(p=>p.owned).length + ' 路自建中转站。' +
+            '公共代理实测大多已失效，建议按 worker/部署说明.md 部署自己的 Worker 以保证 http 电台稳定播放。','warn');
+      } else {
+        log('中转站：已配置 ' + PROXY_LIST.filter(p=>p.owned).length + ' 路自建通道（热备已启用）','ok');
+      }
+    }, 2600);
+  }
+
   // 每周全量校验：距上次 >= 7 天则自动触发
   const lastCheck = parseInt(loadStr(LS.lastCheck,'0')||'0',10);
   if(!lastCheck || (Date.now() - lastCheck) > 7*24*3600*1000){
@@ -2525,36 +3452,123 @@ function init(){
 document.addEventListener('DOMContentLoaded', init);
 </script>
 <script>
-/* ===== WATERS LITE 扩展：精选台 / 单屏 Tab / 首播 WLTW ===== */
+/* ===== WATERS LITE 扩展：收藏快捷台 / 单屏 Tab / 首播 WLTW / 奶油白主题 ===== */
 (function(){
-  var LABELS = {
-    'WLTW 106.7 Lite FM (New York)':'WLTW·纽约',
-    '80 后音悦台':'80后音悦台',
-    '广东音乐之声':'广东音乐之声',
-    'CRI 世界华声':'CRI世界华声'
-  };
-  var FEATURED = ['WLTW 106.7 Lite FM (New York)','80 后音悦台','广东音乐之声'];
+  /* 旧版固定的三个精选台已取消：快捷台改为跟随「收藏列表」动态生成 */
+
+  /* ---------- 源可用性排序：HTTPS 优先、跳过已知死链 ---------- */
+  var DEAD_URLS = [
+    'http://lhttp.qingting.fm/live/20207761/64k.mp3'   // 80后音悦台旧源，已 404
+  ];
+  function isDead(u){ return DEAD_URLS.indexOf(u) >= 0; }
+
+  /* 把电台的 sources 重新排序：可用 HTTPS 源排最前，死链/明文源排到最后 */
+  function usableSources(st){
+    var src = (st && st.sources && st.sources.length) ? st.sources.slice() : (st && st.url ? [st.url] : []);
+    var good = [], bad = [];
+    src.forEach(function(u){
+      if(!u) return;
+      if(isDead(u)) bad.push(u);
+      else if(/^https:\/\//i.test(u)) good.push(u);
+      else bad.push(u);                 // http 明文在 HTTPS 页面会被拦截，降级
+    });
+    return good.concat(bad);
+  }
+  /* 生成一个「以可用源为主源」的播放对象 */
+  function playableStation(st){
+    var list = usableSources(st);
+    return {
+      name: st.name,
+      url: list[0] || st.url,
+      sources: list
+    };
+  }
+  function playSafe(st){
+    if(typeof playStation !== 'function' || !st) return;
+    playStation(playableStation(st));
+  }
+
   function stationByName(name){
     var list = (typeof PRESET_STATIONS!=='undefined') ? PRESET_STATIONS : [];
     for(var i=0;i<list.length;i++){
-      if(list[i].name===name || list[i].name.indexOf(name)>=0) return list[i];
+      if(list[i].name===name || list[i].name.indexOf(name)>=0){
+        var s = list[i];
+        // 关键：PRESET_STATIONS 元素只有 {name, sources}，没有 url 字段；
+        // 这里补齐 url（取首个可用源），否则 playStation 会因 st.url 为空而报「无效链接」。
+        return { name:s.name, url:(s.sources && s.sources[0]) || s.url || '', sources:s.sources || [] };
+      }
     }
     return null;
   }
-  function renderFeatured(){
+
+  /* ---------- 收藏快捷台：取收藏列表前三个，随收藏变化实时刷新 ---------- */
+  function renderQuickFavs(){
     var box = document.getElementById('featuredChips');
     if(!box) return;
-    FEATURED.forEach(function(name){
-      var st = stationByName(name);
-      if(!st) return;
+    var favs = (typeof state!=='undefined' && state.favs) ? state.favs : [];
+    box.innerHTML = '';
+    if(!favs.length){
+      var tip = document.createElement('div');
+      tip.className = 'qf-empty';
+      tip.textContent = '还没有收藏电台 · 到右侧电台库点心形即可固定到这里';
+      box.appendChild(tip);
+      return;
+    }
+    favs.slice(0,3).forEach(function(f){
+      var st = playableStation(f);          // 沿用收藏项自身的源，并做可用性排序
       var b = document.createElement('button');
       b.className = 'chip featured-chip';
-      b.textContent = LABELS[name] || name;
-      b.setAttribute('data-name', st.name);
-      b.onclick = function(){ if(typeof playStation==='function') playStation(st); };
+      b.setAttribute('data-name', f.name);
+      b.title = f.name;
+      var span = document.createElement('span');
+      span.className = 'qf-name';
+      span.textContent = f.name;
+      b.appendChild(span);
+      b.onclick = function(){ playSafe(st); };
       box.appendChild(b);
     });
+    // 三个键等宽时名字长了会截断：适度缩短名称，保证可读
+    fitQuickLabels(box);
+    markQuickNow();
   }
+
+  /* 根据键宽自动缩短名称：优先保留可辨识的关键词 */
+  function fitQuickLabels(box){
+    var chips = box.querySelectorAll('.featured-chip');
+    if(!chips.length) return;
+    chips.forEach(function(c){
+      var n = c.getAttribute('data-name') || '';
+      var span = c.querySelector('.qf-name');
+      if(!span) return;
+      span.textContent = shortenName(n);
+    });
+  }
+  /* 名称精简：仅当名字过长（>12 字符）才做缩写，短名保持原样 */
+  function shortenName(n){
+    if(!n) return '';
+    var s = n
+      .replace(/106\.7\s*/g,'')
+      .replace(/\s*Lite FM.*$/i,'')
+      .replace(/\(New York\).*$/i,'')
+      .replace(/China Plus Radio.*$/i,'')
+      .replace(/\s+/g,' ')
+      .trim();
+    if(s.length <= 12) return s;          // 放得下就原样显示
+    var RULES = [
+      [/^WLTW.*/i, 'WLTW'],
+      [/^CNR-(\d+)\s*(.+)$/i, function(m,a,rest){ return 'CNR-'+a+' '+(rest.length>4?rest.slice(0,4):rest); }],
+      [/^CRI\s*(.+)$/i, function(m,rest){ return 'CRI '+(rest.length>4?rest.slice(0,4):rest); }]
+    ];
+    for(var i=0;i<RULES.length;i++){
+      if(RULES[i][0].test(s)){
+        var r = RULES[i][1];
+        s = (typeof r === 'function') ? s.replace(RULES[i][0], r) : r;
+        break;
+      }
+    }
+    return s.length > 11 ? s.slice(0, 10) + '…' : s;
+  }
+
   function setupTabs(){
     var tabs = document.querySelectorAll('#tabbar .tab');
     var secs = {
@@ -2570,36 +3584,266 @@ document.addEventListener('DOMContentLoaded', init);
     tabs.forEach(function(t){ t.onclick = function(){ activate(t.getAttribute('data-tab')); }; });
     activate('favSection');
   }
-  function setupVinylSpin(){
-    var st = document.getElementById('status');
-    var stage = document.getElementById('vinylStage');
-    if(!st || !stage || !window.MutationObserver) return;
-    var apply = function(){
-      var on = st.classList.contains('playing') || st.classList.contains('buffering');
-      stage.classList.toggle('vinyl-spin', on);
-    };
-    new MutationObserver(apply).observe(st, {attributes:true, attributeFilter:['class']});
-    apply();
+
+  /* ============================================================
+   * 开机即播 WLTW 106.7 Lite FM
+   * ------------------------------------------------------------
+   * 每次打开页面 / 启动程序都立刻播 WLTW，不需要任何点击。
+   * 浏览器的自动播放策略要求「用户手势」，所以这里采取双保险：
+   *   1) 先静音自动起播（静音播放 100% 被放行）→ 播起来后自动取消静音
+   *   2) 若被拦截，则挂一个一次性监听，用户首次触碰页面任意位置
+   *      的瞬间立刻开始播放（几乎是无感的）
+   * ============================================================ */
+  var AUTOPLAY_BOOT = true;   // 是否开机自动播放 WLTW（改成 false 即可关闭）
+  var bootTried = false;      // 是否已尝试过起播
+  var bootUnlocked = false;   // 是否已成功进入播放
+  var bootUserMuted = null;   // 用户真实静音偏好（null=尚未读取）
+
+  function wltwStation(){
+    var s = stationByName('WLTW');
+    if(s) return s;
+    // 兜底：从预置库里直接找带 WLTW / 106.7 的台
+    var list = (typeof PRESET_STATIONS!=='undefined') ? PRESET_STATIONS : [];
+    for(var i=0;i<list.length;i++){
+      var n = list[i].name || '';
+      if(n.indexOf('WLTW')>=0 || n.indexOf('106.7')>=0){
+        return { name:list[i].name, url:(list[i].sources&&list[i].sources[0])||'', sources:list[i].sources||[] };
+      }
+    }
+    return null;
   }
+
+  /* 拿到播放器实例（它是 new Audio() 创建的，不在 DOM 里，必须直接引用变量） */
+  function getAudio(){
+    try{ if(typeof audio!=='undefined' && audio) return audio; }catch(e){}
+    return document.querySelector('audio');
+  }
+
+  /* 立即起播
+   * fromGesture=true 表示由用户手势触发（此时可正常非静音播放）
+   * fromGesture=false 表示开机自动尝试（先用静音绕过策略，成功后再还原） */
+  function bootPlay(fromGesture){
+    if(bootUnlocked) return;
+    var wltw = wltwStation();
+    if(!wltw || typeof playSafe!=='function') return;
+
+    var el = getAudio();
+    // 读「用户真实偏好」而不是当前 audio.muted —— 因为开机时我们可能刚把 muted 改成 true
+    var userMuted = bootUserMuted;
+    if(userMuted === null){ userMuted = !!(el && el.muted); bootUserMuted = userMuted; }
+
+    // 手势到来时：如果刚才的自动起播已经挂载了源，只需补一次 play()（手势解锁）
+    if(fromGesture && bootTried && el && (el.src || (state && state.hls))){
+      if(!userMuted) el.muted = false;
+      try{ el.play().catch(function(){}); }catch(e){}
+      startBootWatch(userMuted, true);
+      return;
+    }
+
+    bootTried = true;
+    // 手势触发：直接正常播放；开机自动：先静音（允许自动播放），成功后还原
+    if(el && !userMuted && !fromGesture) el.muted = true;
+    if(el && userMuted) el.muted = true;   // 用户本来就静音
+
+    playSafe(wltw);
+    startBootWatch(userMuted, fromGesture);
+  }
+
+  /* 起播后轮询最多 3 秒：一旦进入播放就恢复真实音量 */
+  function startBootWatch(userMuted, fromGesture){
+    var tries = 0;
+    var timer = setInterval(function(){
+      tries++;
+      var a = getAudio();
+      if(!a){ clearInterval(timer); return; }
+      if(a.currentTime > 0 || !a.paused){
+        clearInterval(timer);
+        bootUnlocked = true;
+        if(!userMuted){ a.muted = false; }
+        if(typeof updateMuteIcon==='function') updateMuteIcon();
+        if(typeof updateBtn==='function') updateBtn();
+      } else if(!fromGesture && tries >= 20){  // 3s 仍未起播 → 交给手势兜底
+        clearInterval(timer);
+        if(a && !userMuted) a.muted = false;   // 还原，避免留在"假静音"状态
+      }
+    }, 150);
+  }
+
+  /* 首次用户手势兜底：一旦用户点了/碰了页面，立刻播放 */
+  function armGestureFallback(){
+    function onGesture(){
+      if(bootUnlocked) return;
+      document.removeEventListener('pointerdown', onGesture, true);
+      document.removeEventListener('keydown', onGesture, true);
+      document.removeEventListener('touchstart', onGesture, true);
+      bootPlay(true);   // 手势触发 → 直接正常播放
+    }
+    document.addEventListener('pointerdown', onGesture, true);
+    document.addEventListener('keydown', onGesture, true);
+    document.addEventListener('touchstart', onGesture, true);
+  }
+
   function setupFirstStation(){
-    var wltw = stationByName('WLTW');
-    var last = (typeof LS!=='undefined') ? loadStr(LS.last,'') : '';
-    if(wltw && typeof state!=='undefined' && !last){
-      state.current = {name:wltw.name, url:wltw.url, sources:wltw.sources};
-      if(typeof renderNow==='function') renderNow();
-      var auto = new URLSearchParams(location.search).get('auto')==='1';
-      if(auto){ if(typeof playStation==='function') playStation(state.current); }
-      else { if(typeof setStatus==='function') setStatus('idle','点击播放 WLTW ▶'); if(typeof updateBtn==='function') updateBtn(); }
-      // 高亮精选里的 WLTW
-      var chip = document.querySelector('.featured-chip[data-name="'+wltw.name+'"]');
-      if(chip) chip.classList.add('now');
+    var wltw = wltwStation();
+    if(!wltw) return;
+
+    // 无论上次听的是什么，开机一律先把 WLTW 挂上并渲染出来
+    var p = playableStation(wltw);
+    if(typeof state!=='undefined'){
+      state.current = { name:p.name, url:p.url, sources:p.sources };
+    }
+    if(typeof renderNow==='function') renderNow();
+    if(typeof tuneTheme==='function') tuneTheme();
+
+    if(!AUTOPLAY_BOOT){
+      if(typeof setStatus==='function') setStatus('idle','点击播放 ▶');
+      if(typeof updateBtn==='function') updateBtn();
+      return;
+    }
+
+    // 记录播放成功（audio playing 事件触发时置位）
+    var el = getAudio();
+    if(el) el.addEventListener('playing', function(){ bootUnlocked = true; });
+
+    // 1) 立刻尝试起播
+    bootPlay();
+
+    // 2) 若 800ms 后仍未出声，说明被浏览器拦截 → 挂手势兜底
+    setTimeout(function(){
+      if(!bootUnlocked){
+        var a = getAudio();
+        var reallyPlaying = a && !a.paused && (a.currentTime > 0 || a.readyState >= 2);
+        if(reallyPlaying){ bootUnlocked = true; return; }
+        armGestureFallback();
+        if(typeof setStatus==='function') setStatus('idle','点击页面任意处播放 ▶');
+        if(typeof log==='function') log('自动播放被浏览器拦截，已挂载手势兜底：触碰页面即播','warn');
+      }
+    }, 800);
+  }
+
+  /* ==== 界面层增强（只读原状态，不改动任何后台逻辑） ==== */
+
+  /* 电台 → 唱片色相：低饱和暖色系，与奶油白机身协调 */
+  var HUE_KEYS = [
+    ['WLTW', 26], ['Lite', 26],
+    ['80', 18], ['怀旧', 30],
+    ['广东', 40], ['岭南', 40],
+    ['CRI', 12], ['环球', 12],
+    ['音乐', 32], ['新闻', 200], ['之声', 210]
+  ];
+  var HUE_POOL = [26, 18, 38, 12, 340, 32, 45];
+  function hashStr(str){ var h=0; for(var i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))>>>0; } return h; }
+  function hueOf(name){
+    for(var i=0;i<HUE_KEYS.length;i++){ if(name.indexOf(HUE_KEYS[i][0])>=0) return HUE_KEYS[i][1]; }
+    return name ? HUE_POOL[hashStr(name)%HUE_POOL.length] : 26;
+  }
+
+  /* 把当前电台色调写到 --art-hue，并更新唱片上的台名首字 */
+  function tuneTheme(){
+    var name = (typeof state!=='undefined' && state.current && state.current.name) || '';
+    document.documentElement.style.setProperty('--art-hue', hueOf(name));
+    var art = document.getElementById('artwork');
+    if(art){
+      var m = (name||'').replace(/^[^0-9A-Za-z\u4e00-\u9fa5]+/,'');
+      art.textContent = m ? m.charAt(0).toUpperCase() : '♫';
     }
   }
+
+  /* 分段控制器：滑块跟随选中项 */
+  function setupSegmentedThumb(){
+    var bar = document.getElementById('tabbar');
+    var thumb = document.getElementById('segThumb');
+    if(!bar || !thumb) return;
+    var tabs = bar.querySelectorAll('.tab');
+    function move(){
+      var idx = 0;
+      for(var i=0;i<tabs.length;i++){ if(tabs[i].classList.contains('active')) idx = i; }
+      thumb.style.transform = 'translateX(' + (idx*100) + '%)';
+    }
+    if(window.MutationObserver){
+      new MutationObserver(move).observe(bar,{attributes:true,subtree:true,attributeFilter:['class']});
+    }
+    move();
+  }
+
+  /* 快捷台高亮当前播放项 */
+  function markQuickNow(){
+    var cur = (typeof state!=='undefined' && state.current) ? state.current.name : '';
+    document.querySelectorAll('.quick-favs .featured-chip').forEach(function(b){
+      var n = b.getAttribute('data-name') || '';
+      b.classList.toggle('now', !!n && !!cur && (n===cur || cur.indexOf(n)>=0 || n.indexOf(cur)>=0));
+    });
+  }
+
+  function setupRadioPanel(){
+    var $ = function(id){ return document.getElementById(id); };
+
+    // 状态变化 → 同步快捷台高亮
+    if($('status') && window.MutationObserver){
+      new MutationObserver(markQuickNow).observe($('status'), {attributes:true, attributeFilter:['class'], childList:true, subtree:true});
+      markQuickNow();
+    }
+
+    // 台名变化 → 更新唱片色调 / 首字 + 快捷台高亮
+    if($('nowName') && window.MutationObserver){
+      new MutationObserver(function(){ tuneTheme(); markQuickNow(); })
+        .observe($('nowName'), {childList:true, characterData:true, subtree:true});
+    }
+
+    // 监听收藏列表变化（收藏 / 取消收藏 / 数据恢复）→ 重建快捷台
+    if($('favList') && window.MutationObserver){
+      new MutationObserver(renderQuickFavs).observe($('favList'), {childList:true});
+    }
+
+    tuneTheme();
+  }
+
+  /* ============================================================
+   * 屏内常显时钟：24 小时制 + 「两位数月份-日期」
+   * ============================================================ */
+  function pad2(n){ return (n < 10 ? '0' : '') + n; }
+
+  function tickClock(){
+    var t = document.getElementById('lcdTime');
+    var d = document.getElementById('lcdDate');
+    if(!t && !d) return;
+    var now = new Date();
+    if(t){
+      var hh = pad2(now.getHours());          // 24 小时制，不补 AM/PM
+      var mm = pad2(now.getMinutes());
+      var ss = pad2(now.getSeconds());
+      // 主时间用文字（与主显示屏台名同款衬线字体）；秒数做小号上标
+      t.innerHTML = hh + ':' + mm +
+                    '<span class="lcd-sec">' + ss + '</span>';
+    }
+    if(d){
+      // 两位数月份-日期，例：10-03
+      d.textContent = pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+    }
+  }
+
+  function setupClock(){
+    tickClock();
+    // 对齐到整秒再进入 1s 心跳，避免长期累积漂移
+    setTimeout(function(){
+      tickClock();
+      setInterval(tickClock, 1000);
+    }, 1000 - (Date.now() % 1000));
+  }
+
   document.addEventListener('DOMContentLoaded', function(){
-    renderFeatured();
+    renderQuickFavs();
     setupTabs();
-    setupVinylSpin();
+    setupSegmentedThumb();
+    setupRadioPanel();
+    setupClock();
     setupFirstStation();
+    tuneTheme();
+    // 兜底：延迟一次重绘，确保首屏收藏已就绪
+    setTimeout(renderQuickFavs, 120);
+    // 后台预热：把库里的 http 主播 host 挨个探一遍 https 支持情况，
+    // 这样列表里的「https 直连」标记立刻正确，点击时也不用等探测
+    setTimeout(warmHttpsProbe, 1500);
   });
 })();
 </script>
