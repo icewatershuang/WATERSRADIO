@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>WATERS RADIO</title>
+<!-- 加到主屏时用干净名字，不受下方 title 里的构建号影响 -->
+<meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
+<!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
+     （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
+<title>WATERS RADIO · v31</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
