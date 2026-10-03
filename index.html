@@ -1169,6 +1169,24 @@ function getStationList(){
 /* 兼容引用：PRESET_STATIONS 指向展开后的列表 */
 const PRESET_STATIONS = getStationList().map(s => ({name:s.name, sources:s.sources}));
 
+/* ---------- 电台「显示名」规整（收藏列表 / 快捷栏 / 各列表共用） ----------
+   · 库里少数台名带来源尾巴，例如「80后音悦台 河南网络电台·」→ 统一收成主名「80后音悦台」
+   · 顺手去掉结尾孤零零的间隔号，并把连续空格压成一个
+   只影响「显示」，不改动 state.favs / 预置库里保存的真实台名，
+   所以重新收藏、搜索匹配、播放取源都不受影响。
+   以后要加别名，只往 NAME_ALIAS 加一行，列表与快捷栏会同时生效。 */
+const NAME_ALIAS = [
+  [/^80后音悦台.*/, '80后音悦台']
+];
+function displayName(n){
+  if(!n) return '';
+  let s = String(n).replace(/\s+/g, ' ').trim();
+  for(let i = 0; i < NAME_ALIAS.length; i++){
+    if(NAME_ALIAS[i][0].test(s)){ s = s.replace(NAME_ALIAS[i][0], NAME_ALIAS[i][1]); break; }
+  }
+  return s.replace(/[·・‧]\s*$/, '').trim();
+}
+
 /* ---------- 2. LocalStorage 工具（所有数据保存在本机） ---------- */
 const LS = {
   fav:'waters_radio.fav.v3',          // 收藏电台 [{name,url,sources?}]（键名保留，避免丢掉用户已有数据）
@@ -2940,7 +2958,7 @@ function stationCard(st){
   div.innerHTML = `
     <div class="st-icon">${isPlaying ? '<span style="display:inline-flex;gap:2px;align-items:flex-end;height:16px"><span style="width:3px;height:8px;background:#fff;border-radius:1px"></span><span style="width:3px;height:14px;background:#fff;border-radius:1px"></span><span style="width:3px;height:6px;background:#fff;border-radius:1px"></span></span>' : '📻'}</div>
     <div class="st-info">
-      <div class="st-name">${escapeHtml(st.name||'未命名')}</div>
+      <div class="st-name">${escapeHtml(displayName(st.name)||'未命名')}</div>
       <div class="st-url">${escapeHtml(st.url.slice(0,60))}${st.url.length>60?'...':''}${sourceBadge}</div>
     </div>
     <button class="st-fav ${isFav(st)?'on':''}" title="收藏">${isFav(st)?ICON_FAV_ON:ICON_FAV_OFF}</button>
@@ -3550,10 +3568,11 @@ document.addEventListener('DOMContentLoaded', init);
       span.textContent = shortenName(n);
     });
   }
-  /* 名称精简：仅当名字过长（>12 字符）才做缩写，短名保持原样 */
+  /* 名称精简：先套共用规整（displayName），仍嫌长（>12 字符）才进一步缩写 */
   function shortenName(n){
-    if(!n) return '';
-    var s = n
+    var s = (typeof displayName === 'function') ? displayName(n) : (n || '');
+    if(!s) return '';
+    s = s
       .replace(/106\.7\s*/g,'')
       .replace(/\s*Lite FM.*$/i,'')
       .replace(/\(New York\).*$/i,'')
@@ -3563,7 +3582,8 @@ document.addEventListener('DOMContentLoaded', init);
     if(s.length <= 12) return s;          // 放得下就原样显示
     var RULES = [
       [/^WLTW.*/i, 'WLTW'],
-      [/^80后音悦台.*/, '80后音悦台'],   // 库里全名是「80后音悦台 河南网络电台·」，快捷键上只留主名
+      // 「80后音悦台」的收名规则已上移到共用的 NAME_ALIAS（见文件开头 displayName），
+      // 这样收藏列表与快捷栏共用同一套名称处理，不再各写一份。
       [/^CNR-(\d+)\s*(.+)$/i, function(m,a,rest){ return 'CNR-'+a+' '+(rest.length>4?rest.slice(0,4):rest); }],
       [/^CRI\s*(.+)$/i, function(m,rest){ return 'CRI '+(rest.length>4?rest.slice(0,4):rest); }]
     ];
