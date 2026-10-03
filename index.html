@@ -812,7 +812,8 @@
 
   /* ========== Toast ========== */
   .toast{
-    position:fixed;left:50%;bottom:44px;transform:translateX(-50%);
+    /* bottom 抬到 80px：给下方常驻的「新版提醒」胶囊留位，两者不会叠在一起 */
+    position:fixed;left:50%;bottom:80px;transform:translateX(-50%);
     padding:15px 26px;border-radius:16px;z-index:300;max-width:80vw;
     font-size:15px;font-weight:600;color:var(--ink);
     background:linear-gradient(168deg,#fffefa,var(--cream-2));
@@ -823,6 +824,34 @@
   .toast.err{color:var(--red)}
   .toast.ok{color:var(--green)}
   @keyframes toastIn{from{opacity:0;transform:translate(-50%,18px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+
+  /* ========== 新版提醒（默认隐藏，仅有新版本时浮出） ==========
+     起因：GitHub Pages 对 HTML 返回 Cache-Control: max-age=600，
+     改版后手机浏览器最长 10 分钟仍会拿到旧页面（普通刷新也不生效）。
+     对策：本页构建号写在 <title> 的「· vNN」里，线上再用一个极小的 version.txt 放同一个号；
+     加载后带时间戳读 version.txt（绕开缓存）比对，线上更大就浮出这条常驻胶囊，
+     点一下就用带 ?v= 的地址强制取最新。样式沿用奶白拟物 + 琥珀色指示点。 */
+  .newver{
+    position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+    z-index:400;display:inline-flex;align-items:center;gap:9px;
+    padding:12px 22px;border-radius:999px;white-space:nowrap;
+    font-size:14px;font-weight:600;color:var(--ink-2);
+    background:linear-gradient(168deg,#fff4dd,#f6e4bd);
+    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,
+      0 0 0 1px rgba(214,193,150,.9),0 12px 28px -8px rgba(150,125,80,.5);
+    animation:newverIn .34s var(--ease) both;
+  }
+  /* 必须显式写：作者样式里的 display 会盖掉 [hidden] 自带的 display:none */
+  .newver[hidden]{display:none}
+  .newver::before{
+    content:'';width:8px;height:8px;border-radius:50%;flex-shrink:0;
+    background:var(--amber);box-shadow:0 0 8px var(--amber);
+  }
+  .newver:active{transform:translateX(-50%) translateY(2px)}
+  @keyframes newverIn{
+    from{opacity:0;transform:translateX(-50%) translateY(16px) scale(.94)}
+    to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  }
 
   /* ========== 横屏矮屏（8 寸平板）自适应 ========== */
   @media (max-height:620px){
@@ -1636,6 +1665,43 @@ function toast(msg, kind='ok'){
   t.innerText = msg;
   document.body.appendChild(t);
   setTimeout(()=>{t.style.opacity='0';t.style.transition='.3s';setTimeout(()=>t.remove(),300)},2400);
+}
+
+/* ===== 新版提醒 =====
+   GitHub Pages 对 HTML 返回 Cache-Control: max-age=600 —— 改版后手机浏览器
+   最长 10 分钟仍然是旧页面，普通刷新也不会去取新的（必须强刷或换网址）。
+   做法：
+     · 本页构建号写在 <title> 的「· vNN」里（浏览器标题栏可见，方便肉眼确认版本）；
+     · 线上根目录放一个极小的 version.txt，内容就是同一个号；
+     · 这里带时间戳读它（绕开缓存），线上号更大就浮出常驻胶囊，点一下带 ?v= 重载。
+   注意：以后改版只需改 <title> 里的号，version.txt 由 sync-version.py 自动同步。 */
+function checkNewVersion(){
+  const el = document.getElementById('newVer');
+  if(!el || !window.fetch) return;
+  const m = /·\s*v(\d+)/.exec(document.title || '');
+  if(!m) return;                                  // 标题里没写构建号就不检查，避免误报
+  const build = Number(m[1]);
+  fetch('version.txt?_=' + Date.now(), {cache:'no-store'})
+    .then(r => r.ok ? r.text() : '')
+    .then(txt => {
+      const remote = String(txt || '').trim();
+      if(!/^\d+$/.test(remote)) return;           // 只认纯数字，防脏内容
+      if(Number(remote) <= build) return;
+      el.setAttribute('data-v', remote);
+      el.textContent = '有新版本 v' + remote + ' · 点我刷新';
+      el.hidden = false;
+      log('检测到线上新版本 v' + remote + '（本页 v' + build + '），可点击刷新');
+    })
+    .catch(()=>{});                               // 离线时静默失败
+  el.addEventListener('click', () => {
+    try{
+      const u = new URL(location.href);
+      u.searchParams.set('v', el.getAttribute('data-v') || String(Date.now()));
+      location.replace(u.toString());             // 换网址 = 必然绕过 HTTP 缓存
+    }catch(e){
+      location.reload();
+    }
+  });
 }
 function fuzzyMatch(a, b){
   a = (a||'').toLowerCase().replace(/\s+/g,'');
@@ -3917,6 +3983,8 @@ document.addEventListener('DOMContentLoaded', init);
     setupClock();
     setupFirstStation();
     tuneTheme();
+    // 静默检查线上有没有比本页更新的版本（应对 GitHub Pages 的 10 分钟缓存）
+    setTimeout(checkNewVersion, 1200);
     // 兜底：延迟一次重绘，确保首屏收藏已就绪
     setTimeout(renderQuickFavs, 120);
     // 后台预热：把库里的 http 主播 host 挨个探一遍 https 支持情况，
@@ -3925,6 +3993,9 @@ document.addEventListener('DOMContentLoaded', init);
   });
 })();
 </script>
+
+<!-- 新版提醒：默认隐藏，只有线上 version.txt 比本页构建号新时才出现（点一下强制取最新） -->
+<button class="newver" id="newVer" type="button" hidden>有新版本 · 点我刷新</button>
 
 </body>
 </html>
