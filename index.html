@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v33</title>
+<title>WATERS RADIO · v34</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -316,10 +316,9 @@
     height:100vh;height:100dvh;max-width:1460px;margin:0 auto;
     padding:16px 26px 18px;overflow:hidden;
     display:grid;
-    grid-template-columns:minmax(360px,42%) minmax(0,1fr);
+    grid-template-columns:1fr;
     grid-template-rows:auto minmax(0,1fr) auto;
-    grid-template-areas:"nav nav" "left right" "bar bar";
-    column-gap:26px;
+    grid-template-areas:"nav" "left" "bar";
     row-gap:14px;
   }
 
@@ -331,9 +330,9 @@
   .nav-inner{
     max-width:none;padding:6px 2px 14px;
     display:grid;
-    grid-template-columns:minmax(360px,42%) minmax(0,1fr);
-    column-gap:26px;
+    grid-template-columns:1fr;      /* 右栏已移除：标题居中悬于播放面板正上方 */
     align-items:end;
+    position:relative;              /* 设置键绝对定位到右侧，不再占栅格列 */
   }
   .brand{display:flex;align-items:flex-end;justify-content:center;text-align:left;
     min-width:0}
@@ -399,6 +398,7 @@
   .brand-text .subtitle{font-size:11px;color:var(--ink-3);margin-top:2px;letter-spacing:.04em}
 
   .nav-icon{
+    position:absolute;right:2px;bottom:14px;   /* 右栏移除后：钉在顶栏右缘，不参与栅格 */
     width:46px;height:46px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     background:linear-gradient(160deg,var(--key-top),var(--key-bot));
@@ -1210,8 +1210,8 @@
 
   /* ========== 横屏矮屏（8 寸平板）自适应 ========== */
   @media (max-height:620px){
-    .container{grid-template-columns:minmax(320px,40%) minmax(0,1fr);padding:10px 18px 12px;column-gap:18px}
-    .nav-inner{padding:2px 2px 8px;grid-template-columns:minmax(320px,40%) minmax(0,1fr);column-gap:18px}
+    .container{grid-template-columns:1fr;padding:10px 18px 12px}
+    .nav-inner{padding:2px 2px 8px;grid-template-columns:1fr}
     /* ⚠️ 必须保留 max-width:470px（与 .now-playing 同宽、同居中）：
        标题框与播放面板是「同宽 470px 的盒子在同一列里各自居中」才对得齐。
        曾把这行写成 max-width:none（让标题占满整列靠左），结果列宽 > 470px 时
@@ -1259,8 +1259,8 @@
     .container{
       height:auto;min-height:100vh;min-height:100dvh;overflow:visible;
       grid-template-columns:1fr;
-      grid-template-rows:auto auto auto auto;   /* 四行：顶栏 / 左栏 / 右栏 / 底栏 */
-      grid-template-areas:"nav" "left" "right" "bar";
+      grid-template-rows:auto auto auto;   /* 三行：顶栏 / 播放面板 / 底栏 */
+      grid-template-areas:"nav" "left" "bar";
       padding:12px 14px 14px;row-gap:12px;column-gap:0;
     }
     /* 竖屏：标题与设置键同排、底部对齐（标题底端 = 圆形设置键底端）
@@ -1421,26 +1421,6 @@
     </div>
   </section>
 
-  <!-- ===== 右栏 · 电台库 ===== -->
-  <section class="lp-right">
-    <div class="lib-panel">
-      <h2 class="lib-title">Station Library · 电台库</h2>
-
-      <!-- 电台库的 4 个列表已挪到底部弹窗。这里保留奶白卡片作为右栏占位，
-           并显示「当前播放」信息，让左右两栏视觉上仍等高、不破版。 -->
-      <div class="lib-hint">
-        <div class="lib-hint-card">
-          <div class="lib-hint-glyph" aria-hidden="true">📻</div>
-          <div class="lib-hint-body">
-            <div class="lib-hint-title">点击底部按钮打开电台库</div>
-            <div class="lib-hint-sub">收藏 · 全部电台 · 全球 · 定制</div>
-          </div>
-          <div class="lib-hint-now" id="libNow"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== 底栏：4 个按钮（点击弹出电台库弹窗） ===== -->
   <nav class="bottom-bar" id="bottomBar">
     <button class="bb-btn active" data-tab="favSection" type="button">
@@ -1449,7 +1429,7 @@
     </button>
     <button class="bb-btn" data-tab="presetSection" type="button">
       <span class="bb-glyph" aria-hidden="true">☰</span>
-      <span class="bb-label">全部电台</span>
+      <span class="bb-label">预设</span>
     </button>
     <button class="bb-btn" data-tab="globalSearchSection" type="button">
       <span class="bb-glyph" aria-hidden="true">🌐</span>
@@ -1476,7 +1456,7 @@
     <div class="segmented" id="tabbar">
       <span class="seg-thumb" id="segThumb"></span>
       <button class="tab active" data-tab="favSection">收藏</button>
-      <button class="tab" data-tab="presetSection">全部电台</button>
+      <button class="tab" data-tab="presetSection">预设</button>
       <button class="tab" data-tab="globalSearchSection">全球</button>
       <button class="tab" data-tab="customSection">定制</button>
     </div>
@@ -1496,7 +1476,7 @@
       <!-- ===== 全部电台 ===== -->
       <section class="section" id="presetSection">
         <div class="section-head">
-          <h2>全部电台</h2>
+          <h2>预设</h2>
           <span class="count" id="presetCount">0 个电台</span>
         </div>
         <div class="search-card">
@@ -4230,7 +4210,7 @@ document.addEventListener('DOMContentLoaded', init);
 
     var TITLES = {
       favSection: '收藏电台',
-      presetSection: '全部电台',
+      presetSection: '预设',
       globalSearchSection: '全球搜索',
       customSection: '定制电台'
     };
