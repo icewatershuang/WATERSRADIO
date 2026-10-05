@@ -8,10 +8,32 @@ android {
 
     defaultConfig {
         applicationId "com.waters.radio"
-        minSdk 21
+        /* minSdk 14 = Android 4.0（满足「装得上」）。
+           ⚠️ 4.0~4.3 的系统 WebView 跑不动现代网页（无 HLS / CSS Grid），
+           装上会白屏；实际可用的最低版本是 Android 5.0（API 21）。
+           MediaSession / MediaStyle 通知都是 API 21+，代码里运行时判断，
+           API 14-20 只有实体键 onKeyDown 兜底。 */
+        minSdk 14
         targetSdk 34
         versionCode 1
         versionName "1.0"
+    }
+
+    signingConfigs {
+        /* 临时签名（可先装上玩）；生产请换成自己的 keystore，见 BUILD.md。
+           keystore 文件不存在时不挂签名配置，仍可出 debug APK。 */
+        if (file("waters-release.keystore").exists()) {
+            release {
+                storeFile file("waters-release.keystore")
+                storePassword "waters2026"
+                keyAlias "waters-radio"
+                keyPassword "waters2026"
+                /* v1：Android 7.0 以下必须；v2/v3：Android 7.0/9.0+ 快速校验 */
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
+            }
+        }
     }
 
     buildTypes {
@@ -20,6 +42,9 @@ android {
         }
         release {
             minifyEnabled false
+            if (file("waters-release.keystore").exists()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
@@ -30,5 +55,5 @@ android {
 }
 
 dependencies {
-    // 无需第三方依赖：直接用系统 WebView 加载本地 HTML
+    /* 无第三方依赖：用系统 WebView + 原生 MediaSession（API 21+）+ 原生通知 API */
 }
