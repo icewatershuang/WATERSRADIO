@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- 网络 & 状态 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 保持 CPU / WiFi 唤醒（锁屏继续播放的关键） -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 前台服务（Android 8+ 要求，锁屏后台播放必备） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Android 14+ 要求为前台服务声明类型 mediaPlayback -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Android 13+ 通知权限（媒体通知栏显示需要） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 蓝牙 AVRCP 控制（Android 12+ 运行时权限；低版本自动忽略） -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <!-- 开机自启动（Android 8+ 需要显式声明此权限才收得到开机广播） -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 请求加入电池优化白名单（引导用户，避免 Doze 模式下锁屏断流） -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:allowBackup="true"
@@ -14,16 +30,35 @@
         android:theme="@style/Theme.WatersRadio"
         android:usesCleartextTraffic="true">
 
+        <!-- 横竖屏跟随重力（HTML 已做自适应，无需锁竖屏） -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:screenOrientation="portrait">
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
+            android:screenOrientation="unspecified">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 前台播放服务：保活 + MediaSession + 蓝牙 AVRCP 转发 -->
+        <service
+            android:name=".RadioPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- 开机自启动：收到 BOOT_COMPLETED 后拉起前台服务并自动起播 -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
     </application>
 
