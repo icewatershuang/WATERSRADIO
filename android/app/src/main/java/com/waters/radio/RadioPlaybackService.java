@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -26,7 +27,7 @@ import org.json.JSONObject;
  *   3. MediaSession（API 21+）——
  *        · 蓝牙耳机/车载（AVRCP）的播放暂停/上一首/下一首 自动汇入回调；
  *        · 锁屏界面显示媒体卡片；
- *        · 音量键走系统媒体音量（setPlaybackToLocal(STREAM_MUSIC)）。
+ *        · 音量键走系统媒体音量（setPlaybackToLocal + USAGE_MEDIA）。
  *   4. 指令转发：MediaSession 回调 → MainActivity.evalJs → WebView 执行
  *      window.watersApi.next() / prev() / resume() / pause()。
  *
@@ -95,8 +96,9 @@ public class RadioPlaybackService extends Service {
         /* WiFi WakeLock：锁屏时 WiFi 不进省电模式，HLS 流不断 */
         WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wm != null && wifiLock == null) {
+            /* 常量名是 WIFI_MODE_FULL_HIGH_PERF（API 12，无 "FORMANCE" 后缀） */
             int mode = Build.VERSION.SDK_INT >= 12
-                ? WifiManager.WIFI_MODE_FULL_HIGH_PERFORMANCE
+                ? WifiManager.WIFI_MODE_FULL_HIGH_PERF
                 : WifiManager.WIFI_MODE_FULL;
             wifiLock = wm.createWifiLock(mode, "WatersRadio:wifi");
             wifiLock.setReferenceCounted(false);
@@ -140,8 +142,14 @@ public class RadioPlaybackService extends Service {
             MediaSession.FLAG_HANDLES_MEDIA_BUTTONS |
             MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
 
-        /* 音量控制走系统媒体音量流（蓝牙音量键=调媒体音量） */
-        mediaSession.setPlaybackToLocal(AudioManager.STREAM_MUSIC);
+        /* 音量控制走系统媒体音量流（蓝牙音量键=调媒体音量）。
+           框架 MediaSession 只有 setPlaybackToLocal(AudioAttributes) 这一档
+           （int 流 ID 那个重载是旧 RemoteControlClient 的），必须包一层。 */
+        AudioAttributes attrs = new AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build();
+        mediaSession.setPlaybackToLocal(attrs);
 
         /* 点通知/锁屏卡片 → 回主界面 */
         Intent back = new Intent(this, MainActivity.class);
