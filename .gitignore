@@ -9,8 +9,13 @@ android/app/src/main/assets/hls.min.js
 
 # 构建产物
 builds/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
 *.apk
 *.aab
+*.keystore
 
 # 临时目录
 _tmp/
