@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v34</title>
+<title>WATERS RADIO · v35</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -110,7 +110,6 @@
   }
   /* 水墨屏：阴影/发光减弱（电子墨水屏没有彩色光晕） */
   html[data-theme="eink"] .now-playing,
-  html[data-theme="eink"] .lib-panel,
   html[data-theme="eink"] .station-item,
   html[data-theme="eink"] .setting-item,
   html[data-theme="eink"] .modal-card{
@@ -135,11 +134,18 @@
   html[data-theme="eink"] .featured-chip.now{
     background:linear-gradient(168deg,#e8e8e8,#c8c8c8) !important;
   }
-  /* 彩色 emoji（🌐 等）与状态小点也去饱和 */
+  /* 底栏字形图标与状态小点也去饱和（兜底，防将来再引入彩色字形） */
   html[data-theme="eink"] .bb-glyph,
   html[data-theme="eink"] .np-status .dot,
   html[data-theme="eink"] .setting-btn.danger,
   html[data-theme="eink"] .st-fav.on{
+    filter:grayscale(1);
+  }
+  /* 重连/修复提示是硬编码暖橙色，水墨屏下一并灰阶化 */
+  html[data-theme="eink"] .np-repair{ color:#555; }
+  /* 音量条 / 喇叭格栅点带米色渐变，水墨屏下灰阶化 */
+  html[data-theme="eink"] .volume-row,
+  html[data-theme="eink"] .grille i{
     filter:grayscale(1);
   }
 
@@ -153,7 +159,6 @@
     --green:#000; --amber:#000; --red:#000;
   }
   html[data-theme="mono"] .now-playing,
-  html[data-theme="mono"] .lib-panel,
   html[data-theme="mono"] .station-item,
   html[data-theme="mono"] .setting-item,
   html[data-theme="mono"] .modal-card,
@@ -168,7 +173,6 @@
   }
   html[data-theme="mono"] .screen,
   html[data-theme="mono"] .seg-thumb,
-  html[data-theme="mono"] .lib-hint-card,
   html[data-theme="mono"] .status-info,
   html[data-theme="mono"] details{
     background:#fff !important;
@@ -194,7 +198,21 @@
   html[data-theme="mono"] .lcd-time, html[data-theme="mono"] .lcd-date,
   html[data-theme="mono"] .lcd-sec, html[data-theme="mono"] .lcd-clock{ color:#000 !important; }
   html[data-theme="mono"] .lcd-bg, html[data-theme="mono"] .np-status *{ color:#000 !important; }
-  /* 彩色 emoji（🌐 等）与状态小点也去饱和 */
+  /* 屏面 / 频谱槽 / 唱片：纯线稿化（白底 + 黑描边），不再保留灰阶渐变「渲染」；
+     上面那条 grayscale(1) 继续兜底屏内彩色元素（代理徽章 / canvas 频谱 / 光晕） */
+  html[data-theme="mono"] .screen-main,
+  html[data-theme="mono"] .viz-wrap{
+    background:#fff !important;
+    box-shadow:0 0 0 1.5px #000 !important;
+  }
+  html[data-theme="mono"] .artwork{
+    background:#fff !important;
+    box-shadow:0 0 0 1.5px #000 !important;
+    text-shadow:none;
+  }
+  html[data-theme="mono"] .np-name{ text-shadow:none; }
+  html[data-theme="mono"] .lcd-clock{ border-left-color:rgba(0,0,0,.35); }
+  /* 底栏字形图标与状态小点也去饱和（兜底，防将来再引入彩色字形） */
   html[data-theme="mono"] .bb-glyph,
   html[data-theme="mono"] .np-status .dot,
   html[data-theme="mono"] .setting-btn.danger,
@@ -204,6 +222,37 @@
   html[data-theme="mono"] .station-item.playing{ background:#000 !important; color:#fff; }
   html[data-theme="mono"] .station-item.playing .st-name,
   html[data-theme="mono"] .station-item.playing .st-url{ color:#fff; }
+  /* 重连/修复提示是硬编码暖橙色，纯黑白下一并归黑 */
+  html[data-theme="mono"] .np-repair{ color:#000 !important; }
+  /* 音量条 / 滑轨 / 喇叭格栅点 / 静音键 / 收藏心：去掉残留的米色渐变，统一线稿 */
+  html[data-theme="mono"] .volume-row,
+  html[data-theme="mono"] .vol-slider{
+    background:#fff !important;
+    box-shadow:0 0 0 1.5px #000 !important;
+  }
+  /* 注意：webkit / moz 伪元素必须分开写 —— 混在同一个选择器列表里
+     会让整条规则在 Chrome 中因「未知伪元素」而被整体丢弃 */
+  html[data-theme="mono"] .vol-slider::-webkit-slider-thumb{
+    background:#fff !important;
+    box-shadow:0 0 0 1.5px #000 !important;
+  }
+  html[data-theme="mono"] .vol-slider::-moz-range-thumb{
+    background:#fff !important;
+    box-shadow:0 0 0 1.5px #000 !important;
+  }
+  html[data-theme="mono"] .grille i{
+    background:#000;
+    box-shadow:none;
+  }
+  html[data-theme="mono"] .volume-row .mute,
+  html[data-theme="mono"] .st-fav{
+    background:#fff !important;
+    box-shadow:0 0 0 1.5px #000 !important;
+  }
+  html[data-theme="mono"] .st-fav.on{
+    background:#fff !important;
+    box-shadow:0 0 0 1.5px #000 !important;
+  }
 
   /* ④ 黑夜模式：底色深炭灰、字浅米色、强调降饱和暖橙 —— 夜间不刺眼 */
   html[data-theme="dark"]{
@@ -218,7 +267,6 @@
     background:radial-gradient(130% 120% at 50% -10%, #2a2620 0%, #1e1a14 42%, #13100c 100%);
   }
   html[data-theme="dark"] .now-playing,
-  html[data-theme="dark"] .lib-panel,
   html[data-theme="dark"] .setting-item,
   html[data-theme="dark"] .modal-card{
     background:linear-gradient(168deg,#2a2620 0%,#242019 60%,#1e1a14 100%) !important;
@@ -242,10 +290,6 @@
     background:linear-gradient(168deg,#2e2820 0%,#242019 52%,#1a1610 100%) !important;
     box-shadow:0 0 0 1px rgba(80,70,55,.5), 0 1px 0 rgba(255,255,255,.06) inset !important;
   }
-  html[data-theme="dark"] .lib-hint-card{
-    background:linear-gradient(168deg,#2e2820,#242019) !important;
-    box-shadow:0 0 0 1px rgba(80,70,55,.45) !important;
-  }
   html[data-theme="dark"] .featured-chip{
     background:linear-gradient(168deg,#2e2820,#1e1a14) !important;
     box-shadow:0 0 0 1px rgba(80,70,55,.5) !important;
@@ -268,6 +312,15 @@
   }
   html[data-theme="dark"] .vol-slider::-webkit-slider-thumb{
     background:linear-gradient(168deg,#3a332a,#2a241c) !important;
+  }
+  /* 音量条底槽与喇叭格栅点：原为米色渐变，黑夜下去饱和融入深色面板 */
+  html[data-theme="dark"] .volume-row{
+    background:linear-gradient(180deg,rgba(24,20,15,.75),rgba(36,32,25,.45)) !important;
+    box-shadow:0 2px 6px rgba(0,0,0,.4) inset,0 1px 0 rgba(255,255,255,.05) !important;
+  }
+  html[data-theme="dark"] .grille i{
+    background:radial-gradient(circle at 36% 32%,#3a332a,#1e1a14);
+    box-shadow:0 1.5px 2px rgba(0,0,0,.55) inset,0 1px 0 rgba(255,255,255,.04);
   }
   html[data-theme="dark"] .ios-input,
   html[data-theme="dark"] .ios-select{
@@ -324,9 +377,8 @@
 
   /* ========== 顶栏 ========== */
   .nav{grid-area:nav;background:none;border:none;position:static}
-  /* 顶栏内部镜像整机两栏网格：让 WATERS 落在左栏正上方，
-     再把品牌字包进与 .now-playing 同样宽的居中容器，补上「面板内边距 + 显示屏外框」
-     的缩进，与主显示屏左边缘精确对齐 */
+  /* 顶栏单列布局：把品牌字包进与 .now-playing 同样宽的居中容器，补上
+     「面板内边距 + 显示屏外框」的缩进，让 WATERS 与主显示屏左边缘精确对齐 */
   .nav-inner{
     max-width:none;padding:6px 2px 14px;
     display:grid;
@@ -708,53 +760,6 @@
     box-shadow:0 2px 5px rgba(150,133,102,.2) inset,0 1px 0 rgba(255,255,255,.85);
   }
 
-  /* ========== 右栏 · 电台库 ========== */
-  .lp-right{grid-area:right;display:flex;flex-direction:column;min-height:0;min-width:0}
-
-  .lib-panel{
-    flex:1;min-height:0;display:flex;flex-direction:column;
-    padding:22px 22px 16px;border-radius:28px;
-    background:linear-gradient(168deg,#fffefa 0%,var(--cream-1) 60%,var(--cream-2) 100%);
-    box-shadow:
-      0 1px 0 rgba(255,255,255,.95) inset,
-      0 0 0 1px rgba(205,195,174,.55),
-      0 26px 52px -18px rgba(140,122,92,.42),
-      0 6px 16px -4px rgba(140,122,92,.2);
-  }
-  .lib-title{
-    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
-    font-size:13px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;
-    color:var(--ink-3);margin:0 4px 14px;
-  }
-
-  /* ── 右栏占位卡片：4 个列表已挪到弹窗，这里只提示 + 当前播放 ── */
-  .lib-hint{
-    flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
-    padding:6px 4px;
-  }
-  .lib-hint-card{
-    width:100%;display:flex;align-items:center;gap:18px;
-    padding:22px 22px;border-radius:22px;text-align:left;
-    background:linear-gradient(168deg,#fffefa,var(--cream-1));
-    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,
-      0 0 0 1px rgba(216,207,187,.72),
-      0 6px 14px -3px rgba(150,133,102,.28);
-  }
-  .lib-hint-glyph{
-    width:64px;height:64px;border-radius:50%;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;font-size:30px;
-    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
-    box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 0 0 1px rgba(216,207,187,.8),
-      0 3px 8px -2px rgba(140,122,92,.4);
-  }
-  .lib-hint-body{flex:1;min-width:0}
-  .lib-hint-title{font-size:15px;font-weight:600;color:var(--ink);margin:0 0 4px}
-  .lib-hint-sub{font-size:12px;color:var(--ink-3);letter-spacing:.04em}
-  .lib-hint-now{
-    flex-shrink:0;font-size:12px;color:var(--ink-3);max-width:38%;
-    text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-
   /* ── 底栏：4 按钮奶白拟物风（点击弹出对应 tab） ── */
   .bottom-bar{
     grid-area:bar;display:flex;gap:10px;
@@ -772,6 +777,7 @@
     transition:transform .09s,box-shadow .09s,color .18s;
   }
   .bb-btn .bb-glyph{font-size:20px;line-height:1}
+  .bb-btn .bb-svg{width:20px;height:20px;display:block}   /* 单色线框图标：与文字符号统一，自动跟随主题色 */
   .bb-btn .bb-label{font-size:12px;font-weight:600;letter-spacing:.04em}
   .bb-btn.active{color:var(--ink);box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 0 0 1px rgba(216,207,187,.7),0 2px 5px rgba(150,133,102,.2) inset}
   .bb-btn:hover{color:var(--ink)}
@@ -1239,7 +1245,6 @@
     .play-btn svg{width:38px;height:38px}
     .volume-row{padding:9px 15px;margin:0}
     .quick-favs .featured-chip{height:48px;font-size:13px;border-radius:14px}
-    .lib-panel{padding:16px 16px 12px;border-radius:22px}
     .segmented .tab{padding:9px 0;font-size:13px}
     .station-item{padding:12px 14px;margin-bottom:6px;border-radius:14px}
     .st-icon{width:46px;height:46px;border-radius:12px;font-size:19px}
@@ -1289,13 +1294,11 @@
     .play-btn svg{width:39px;height:39px}
     .viz-wrap{height:36px}
     canvas.viz{height:36px}
-    /* 右栏占位卡片按内容高度；底栏在最底部一行 */
-    .lp-right{min-height:0}
-    .lib-panel{padding:16px;border-radius:22px;flex:none;min-height:0}
-    .lib-hint{padding:8px 4px}
+    /* 底栏在最底部一行 */
     .bottom-bar{padding:8px 4px 0}
     .bb-btn{padding:12px 4px 10px}
     .bb-glyph{font-size:22px}
+    .bb-svg{width:22px;height:22px}
     .bb-label{font-size:11.5px}
     /* 弹窗内的列表（虽然弹窗默认 hidden，但为完整性保留） */
     .modal-card .panels{overflow:visible}
@@ -1317,33 +1320,43 @@
     .brand-text h1{font-size:calc((100vw - 100px)/7.6)}
   }
 
-  /* ========== 手机横屏 / 极矮视口：保留左右两栏，但整页可纵向滚动 ==========
+  /* ========== 手机横屏 / 极矮视口：单列布局，但整页可纵向滚动 ==========
      手机横屏可用高度常常只有 320~520px，装不下「顶栏 + 播放面板 + 电台库」，
      原来的 height:100dvh + overflow:hidden 会把音量条、快捷收藏、以及电台列表底部整块裁掉且无法到达。
      此处改为：
        · 整页纵向滚动，绝不裁切；
        · 播放面板改用内容高度，音量条 / 快捷收藏完整可见；
-       · **左右两栏保持等高**（见下方注释），列表上限加在列表内部，
-         避免上百个电台把整页撑到几千像素。 */
+       · 列表上限加在列表内部，避免上百个电台把整页撑到几千像素。 */
   @media (orientation:landscape) and (max-height:620px){
     html,body{height:auto;overflow-x:hidden;overflow-y:auto}
     body{min-height:100vh;min-height:100dvh}
     .container{
       height:auto;min-height:100vh;min-height:100dvh;overflow:visible;
-      grid-template-rows:auto auto auto;   /* 三行：顶栏 / 左右两栏 / 底栏 */
+      grid-template-rows:auto auto auto;   /* 三行：顶栏 / 播放面板 / 底栏 */
     }
-    /* ⚠️ 左右两栏必须等高（这是回归修复，别改回去）：
-       ① 左栏要「拉伸到行高」，而不是保留自身内容高度再垂直居中——
-          后者会让左栏明显比右栏矮一截、上边还低一截。
-       ② .lp-right 千万不能加 max-height：任何按视口的封顶都会让它比左栏矮。
-          上限要加在列表内部（见下方 .panels .section），这样面板本身能拉满行高，
-          长列表（「全部电台」近 900 条）也不会把整页撑长。 */
-    .lp-left{align-items:stretch}
     .now-playing{height:auto;max-height:none}
-    .lp-right{min-height:280px;max-height:none}
-    .lib-panel{min-height:0}
     /* 列表内部滚动：200px 是面板内边距 + 标题 + 分段栏的合计，约等于「一屏减导航」 */
     .panels .section{max-height:calc(100dvh - 200px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  }
+
+  /* ── 手机横屏：底栏固定在屏幕底缘（不滚动也能直达 4 个电台库入口）──
+     仅限手机宽度（≤932px）；平板 / 桌面矮窗仍用文档流底栏，避免凭空多出滚动区。
+     z-index=150：压过页面内容，但低于设置抽屉(200/201)、新版提醒(400)、电台库弹窗(500)，
+     打开任一层时底栏都被正常盖住。 */
+  @media (orientation:landscape) and (max-height:620px) and (max-width:932px){
+    .container{padding-bottom:76px}      /* 给固定底栏让位：内容末尾留白，不与底栏重叠 */
+    .bottom-bar{
+      position:fixed;left:0;right:0;bottom:0;z-index:150;
+      padding:8px 14px 10px;             /* 旧内核回退值 */
+      padding:8px 14px calc(10px + env(safe-area-inset-bottom,0px));
+      background:linear-gradient(180deg,var(--cream-1),var(--cream-2));
+      box-shadow:0 -1px 0 var(--line),0 -8px 18px -12px rgba(0,0,0,.22);
+    }
+    /* 新版提醒胶囊 & toast 原位会压在固定底栏上，整体上移让位 */
+    .newver{bottom:70px}
+    .newver{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+    .toast{bottom:132px}
+    .toast{bottom:calc(132px + env(safe-area-inset-bottom,0px))}
   }
 </style>
 
@@ -1375,7 +1388,7 @@
           <div class="artwork" id="artwork">W</div>
           <div class="screen-info">
             <h1 class="np-name" id="nowName">未播放</h1>
-            <p class="np-meta" id="nowMeta">从右侧电台库选择一个电台开始收听</p>
+            <p class="np-meta" id="nowMeta">从底部电台库选择一个电台开始收听</p>
             <div class="np-status" id="status"><span class="dot"></span><span id="statusText">空闲</span></div>
           </div>
           <!-- 常显时钟：早期电子表风格（荧光绿数码字） -->
@@ -1432,7 +1445,10 @@
       <span class="bb-label">预设</span>
     </button>
     <button class="bb-btn" data-tab="globalSearchSection" type="button">
-      <span class="bb-glyph" aria-hidden="true">🌐</span>
+      <svg class="bb-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M3 12h18M12 3c2.9 2.7 4.4 5.7 4.4 9s-1.5 6.3-4.4 9M12 3c-2.9 2.7-4.4 5.7-4.4 9s1.5 6.3 4.4 9"/>
+      </svg>
       <span class="bb-label">全球</span>
     </button>
     <button class="bb-btn" data-tab="customSection" type="button">
@@ -1452,7 +1468,7 @@
       <button class="modal-close" id="modalClose" type="button" aria-label="关闭">✕</button>
     </div>
 
-    <!-- 分段控制器（原 #tabbar，从 .lp-right 挪到弹窗头部） -->
+    <!-- 分段控制器（原 #tabbar，移到弹窗头部） -->
     <div class="segmented" id="tabbar">
       <span class="seg-thumb" id="segThumb"></span>
       <button class="tab active" data-tab="favSection">收藏</button>
@@ -3077,12 +3093,6 @@ function playStation(st, autoReplay=true){
     try{ window.watersCloseRadioModal(); }catch(e){}
   }
 
-  // 同步右栏占位卡的「正在播放」展示
-  try{
-    var ln = document.getElementById('libNow');
-    if(ln) ln.textContent = '正在播放 · ' + (st.name || '');
-  }catch(e){}
-
   // 直接使用传入的 url 作为主播放源，不去预置库做模糊匹配替换（修复播放错乱）
   let playUrl = st.url;
   let playSources = st.sources && st.sources.length > 0 ? st.sources : [st.url];
@@ -4114,7 +4124,7 @@ document.addEventListener('DOMContentLoaded', init);
     if(!favs.length){
       var tip = document.createElement('div');
       tip.className = 'qf-empty';
-      tip.textContent = '还没有收藏电台 · 到右侧电台库点心形即可固定到这里';
+      tip.textContent = '还没有收藏电台 · 点底部电台库里的心形即可固定到这里';
       box.appendChild(tip);
       return;
     }
