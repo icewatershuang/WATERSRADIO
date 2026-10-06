@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v44</title>
+<title>WATERS RADIO · v45</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -3466,6 +3466,7 @@ function startViz(){
     const BARS = 14;                            // v43: 21 → 14（21÷1.5），柱宽约 1.5 倍，更接近老式音响频谱仪的粗柱
     const MIN_HZ = 45, MAX_HZ = 12000;         // 上限收到 12kHz：16kHz 以上音乐几乎没能量，柱会"死"
     const peak = new Float32Array(BARS);      // 平滑后的柱高 0~1
+    const peakHold = new Float32Array(BARS);  // v45: 峰值驻留（悬浮横条，慢速下落，参考图柱顶的悬浮短条）
     const decay = 0.16;                       // 下落速度
     const attack = 0.55;                      // 上升速度
 
@@ -3559,7 +3560,7 @@ function startViz(){
       const w = c.width = c.clientWidth; const h = c.height = c.clientHeight;
       ctx.clearRect(0,0,w,h);
       const bw = w/BARS;
-      const fillW = Math.max(8, bw*0.9);                 // 柱宽（略留缝，老式车机也是分离的方柱）
+      const fillW = Math.max(6, bw - 3);                 // v45: 柱宽=列宽-3px（参考图是宽柱、柱间只留窄缝）
 
       // ===== 先算一遍原始电平（含频段倾斜），用于 AGC 参考 =====
       const raw = new Float32Array(BARS);
@@ -3593,36 +3594,35 @@ function startViz(){
         let bh = peak[i] * h;
         if(bh < 3) bh = 3;
 
-        // ---- v44：离散 LED 点阵频谱（老式音响段码电平表风格）----
-        const gap = 1.2;                                  // 段间竖向缝隙
-        const SEG = Math.max(7, Math.round(h / 4.2));     // 每柱 LED 段数，随屏高自适应
-        const dot = (h - (SEG-1)*gap) / SEG;              // 单个 LED 边长（高）
-        const dotW = Math.min(dot*1.5, fillW*0.9);        // LED 宽（略宽于高，更像发光管）
-        const xo = i*bw + (bw - dotW)/2;                  // 本柱水平居中
-        const lit = Math.round(peak[i]*SEG);              // 点亮段数
-        for(let s=0; s<SEG; s++){
-          const cy = h - (s+1)*dot - s*gap;               // 该段底边 y（自底向上）
-          if(s < lit){
-            // 外发光：低透明度略大一圈，模拟 LED 辉光
-            ctx.globalAlpha = 0.26;
-            ctx.fillStyle = CORE_MID;
-            ctx.fillRect(xo-1.1, cy-1.1, dotW+2.2, dot+2.2);
-            // 主体：竖向渐变（亮→绿→深绿），像发光二极管
-            const g = ctx.createLinearGradient(0, cy, 0, cy+dot);
-            g.addColorStop(0,   CORE_TOP);
-            g.addColorStop(0.5, CORE_MID);
-            g.addColorStop(1,   CORE_BOT);
-            ctx.globalAlpha = 1;
-            ctx.fillStyle = g;
-            ctx.fillRect(xo, cy, dotW, dot);
-          } else {
-            // 熄灭段：暗绿底，保留"未点亮"的轮廓
-            ctx.globalAlpha = 0.15;
-            ctx.fillStyle = CORE_MID;
-            ctx.fillRect(xo, cy, dotW, dot);
-          }
+        // ---- v45：宽柱细横条 LED 频谱（用户参考图：宽柱+横条纹理+峰值驻留+顶格转红）----
+        const x = i*bw + (bw - fillW)/2;                   // 本柱水平居中
+        const gapY = 1.4;                                  // 横条间竖向缝隙
+        const rowH = 2.2;                                  // 单条 LED 横条高度
+        const ROWS = Math.max(8, Math.floor((h + gapY) / (rowH + gapY)));  // 每柱横条数，随屏高自适应
+        const lit = Math.max(1, Math.round(peak[i]*ROWS)); // 点亮条数（底部至少 1 条，参考图柱子都坐底）
+        for(let s=0; s<lit; s++){
+          const cy = h - (s+1)*rowH - s*gapY;              // 该条底边 y（自底向上）
+          // 主体：荧光绿横条（与数码钟同族的薄荷绿）
+          ctx.fillStyle = '#6fffba';
+          ctx.fillRect(x, cy, fillW, rowH);
+          // 条顶 0.8px 高光：还原参考图「一条条发光横管」的立体纹理
+          ctx.globalAlpha = 0.5;
+          ctx.fillStyle = '#d9ffef';
+          ctx.fillRect(x, cy, fillW, Math.min(0.8, rowH*0.4));
+          ctx.globalAlpha = 1;
         }
-        ctx.globalAlpha = 1;
+        // 峰值驻留（peak hold）：比柱顶高一条的悬浮短横条，慢速下落；
+        // 接近满格时转红（参考图最高那根柱顶端的红条 = 峰值指示）
+        peakHold[i] = Math.max(peak[i], peakHold[i] - 0.006);   // 每帧下落 ~0.36/s，全高约 2.8s
+        const pRow = Math.round(peakHold[i]*ROWS);
+        const hot = peakHold[i] > 0.92;                    // 接近满格 → 红色削顶警示
+        if(hot || pRow > lit){
+          const py = h - pRow*rowH - (pRow-1)*gapY;        // 峰值所在横条的位置
+          ctx.globalAlpha = hot ? 0.95 : 0.85;
+          ctx.fillStyle = hot ? '#ff4b41' : '#9dffcf';
+          ctx.fillRect(x, py, fillW, rowH*0.85);
+          ctx.globalAlpha = 1;
+        }
       }
 
       // E. 极淡扫描线，强化老式段码管的横向栅格感
