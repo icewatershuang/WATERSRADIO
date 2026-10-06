@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v47</title>
+<title>WATERS RADIO · v48</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -636,6 +636,14 @@
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
   .np-repair{font-size:10.5px;color:#ff9c6a;min-height:14px;margin:0}
   .np-repair:empty{display:none}   /* 无提示时不占位，避免竖屏 space-between 在它两侧多出两个空隙档 */
+  /* v48：电台网址行。默认隐藏，仅横屏显示（竖屏不需要，见下方 @media landscape） */
+  .np-url{
+    display:none;
+    font-size:10px;color:var(--lcd-dim);margin:3px 0 0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    letter-spacing:.02em;opacity:.82;
+  }
+  .np-url:empty{display:none}
 
   /* 扬声器格栅：拟物小细节（纯装饰） */
   .grille{
@@ -1309,6 +1317,11 @@
     .st-name{font-size:14.5px}
   }
 
+  /* v48：横屏显示电台网址（竖屏不显示，见 .np-url 默认 display:none） */
+  @media (orientation:landscape){
+    .np-url{display:block}
+  }
+
   /* ========== 竖屏：上下堆叠 + 整页纵向滚动 ========== */
   @media (orientation:portrait){
     /* 竖屏解锁整页滚动：
@@ -1497,6 +1510,7 @@
             <h1 class="np-name" id="nowName">未播放</h1>
             <p class="np-meta" id="nowMeta">从底部电台库选择一个电台开始收听</p>
             <div class="np-status" id="status"><span class="dot"></span><span id="statusText">空闲</span></div>
+            <div class="np-url" id="nowUrl"></div>
           </div>
           <!-- 常显时钟：早期电子表风格（荧光绿数码字） -->
           <div class="lcd-clock" aria-label="当前时间">
@@ -3748,9 +3762,13 @@ function renderNow(){
     /* v43：不再显示流 URL（屏面更简洁）；完整台名/地址仍可通过台名 title 查看 */
     $('#nowMeta').innerHTML = badge;
     $('#nowName').title = cur.name;
+    /* v48：横屏才显示电台网址（CSS 按 orientation 控制显隐；竖屏隐藏） */
+    $('#nowUrl').textContent = cur.url || '';
+    $('#nowUrl').title = cur.url || '';
   } else {
     $('#nowMeta').innerHTML = '从下方选择电台，或粘贴直播流 URL';
     $('#nowName').title = '';
+    $('#nowUrl').textContent = '';
   }
 }
 
