@@ -231,7 +231,7 @@ public class RadioPlaybackService extends Service {
     }
 
     private void stopIcy() {
-        if (icyTask != null) { icyTask.stop(); icyTask = null; }
+        if (icyTask != null) { icyTask.cancel(); icyTask = null; }
         icyUrl = "";
     }
 
@@ -242,7 +242,7 @@ public class RadioPlaybackService extends Service {
         private String lastTitle = "";
 
         IcyMetadataTask(String url, IcyListener l) { this.url = url; this.listener = l; }
-        void stop() { stopped = true; this.interrupt(); }
+        void cancel() { stopped = true; this.interrupt(); }
 
         @Override
         public void run() {
