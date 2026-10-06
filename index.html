@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v45</title>
+<title>WATERS RADIO · v47</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -504,7 +504,7 @@
   }
   /* 屏面：内嵌凹槽 */
   .screen-main{
-    display:flex;align-items:center;gap:18px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:18px;
     padding:14px 17px 12px;border-radius:14px;   /* v43: 15/13→14/12，抵消刊头高度 */
     background:linear-gradient(170deg,#3a2c1e,var(--lcd-bg) 45%,#241b12);
     box-shadow:0 0 0 1px rgba(90,70,45,.7),0 3px 7px rgba(70,55,35,.55) inset;
@@ -535,9 +535,9 @@
     text-shadow:0 0 6px rgba(92,255,160,.55), 0 0 13px rgba(92,255,160,.30);
   }
   /* 时间：主字号 */
-  .lcd-time{ font-size:33px;letter-spacing:.04em; }
+  .lcd-time{ font-size:43px;letter-spacing:.04em; }
   /* 日期：随主字号同比略小 */
-  .lcd-date{ font-size:18px;letter-spacing:.10em; }
+  .lcd-date{ font-size:23px;letter-spacing:.10em; }
   /* 秒数：更小一号，稍微抬起到上标位置 */
   .lcd-sec{
     font-size:14.5px;font-weight:400;
@@ -545,6 +545,22 @@
     align-self:flex-start;
     transform:translateY(-.1em);
   }
+  /* 同步文字（ICY / 流内元数据）滚动字幕：APK 推来实时曲目时才显示 */
+  .np-marquee{
+    display:none;width:100%;flex:0 0 100%;
+    overflow:hidden;white-space:nowrap;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);
+  }
+  .np-marquee.show{display:block}
+  .np-marquee-track{
+    display:inline-block;padding-left:100%;
+    color:var(--lcd-glow);font-size:11.5px;letter-spacing:.08em;
+    text-shadow:0 0 8px rgba(255,180,85,.35);
+    animation:marquee 16s linear infinite;
+  }
+  @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+
   /* 频谱条：嵌在外框底部凹槽里，与屏同色系（高度＝原 39px 的 1.2 倍）
      v43：左右不留 margin，与 .screen-main 完全同宽（上下两块屏对齐更协调） */
   .viz-wrap{
@@ -1273,8 +1289,8 @@
     .artwork{width:56px;height:56px;font-size:23px}
     .np-name{font-size:17px}
     .lcd-clock{gap:2px;padding-left:11px}
-    .lcd-time{font-size:27.6px}
-    .lcd-date{font-size:15px}
+    .lcd-time{font-size:35.9px}
+    .lcd-date{font-size:19.5px}
     .lcd-sec{font-size:12px}
     .viz-wrap{height:32.4px;margin:5px 0 1px}
     canvas.viz{height:32.4px}
@@ -1340,8 +1356,8 @@
     .lcd-clock{gap:2px;padding-left:8px}
     /* v44：DSEG7 段码数字比旧衬线数字宽约 1.8 倍，竖屏时钟字号需收小，
        否则右栏时钟会把台名挤成一字宽（实测 31.2px 时台名仅剩 31px） */
-    .lcd-time{font-size:19px}
-    .lcd-date{font-size:11px}
+    .lcd-time{font-size:24.7px}
+    .lcd-date{font-size:14.3px}
     .lcd-sec{font-size:9px}
     .controls{gap:24px;margin:0}
     .ctrl-btn{width:64px;height:64px}
@@ -1487,6 +1503,7 @@
             <div class="lcd-time" id="lcdTime">--:--</div>
             <div class="lcd-date" id="lcdDate">--.--</div>
           </div>
+          <div class="np-marquee" id="npMarquee" aria-hidden="true"><span class="np-marquee-track" id="npMarqueeTrack"></span></div>
         </div>
         <div class="viz-wrap"><canvas class="viz" id="viz" width="600" height="46.8"></canvas></div>
       </div>
@@ -3697,7 +3714,20 @@ function prevNext(dir){
 }
 
 /* ---------- 10. 渲染 ---------- */
+var syncedText = '';
+function setSyncedText(t){
+  syncedText = (t||'').trim();
+  var box = document.getElementById('npMarquee');
+  var track = document.getElementById('npMarqueeTrack');
+  if(!box || !track) return;
+  if(!syncedText){ box.classList.remove('show'); track.textContent=''; return; }
+  track.textContent = syncedText + '\u3000\u3000·\u3000\u3000' + syncedText;
+  box.classList.add('show');
+}
+window.__onIcy = function(t){ try{ setSyncedText(t); }catch(e){} };
+
 function renderNow(){
+  setSyncedText('');   /* v47：切台即清空旧同步文字，等新 ICY 推来 */
   const cur = state.current;
   /* v43：屏面显示规整短名（displayName 收主名，如「80后音悦台」），
      CSS 允许两行折行，长名不再截成「W…」这种残名 */
@@ -4574,6 +4604,7 @@ document.addEventListener('DOMContentLoaded', init);
       var payload = {
         name: c ? (c.name || '') : '',
         url: c ? (c.url || '') : '',
+        title: (typeof syncedText!=='undefined' && syncedText) ? syncedText : '',
         playing: !!(a && !a.paused)
       };
       window.WatersNative.onNowPlaying(JSON.stringify(payload));
@@ -4593,6 +4624,7 @@ document.addEventListener('DOMContentLoaded', init);
       return JSON.stringify({
         name: c ? (c.name||'') : '',
         url: c ? (c.url||'') : '',
+        title: (typeof syncedText!=='undefined' && syncedText) ? syncedText : '',
         playing: !!(a && !a.paused)
       });
     }
