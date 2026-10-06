@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v41</title>
+<title>WATERS RADIO · v42</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -721,11 +721,11 @@
 
   /* 收藏快捷台：音量键下方的一排大胶囊键，跟随收藏列表动态生成 */
   .quick-favs{
-    display:flex;justify-content:center;align-items:stretch;
+    display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;
     gap:9px;width:100%;
   }
   .quick-favs .featured-chip{
-    flex:0 1 auto;max-width:calc((100% - 18px)/3);min-width:0;
+    flex:0 1 calc((100% - 18px)/3);max-width:calc((100% - 18px)/3);min-width:0;
     justify-content:center;
     height:56px;padding:0 10px;gap:8px;
     border-radius:16px;
@@ -760,6 +760,15 @@
     background:linear-gradient(180deg,rgba(230,223,208,.45),rgba(242,236,224,.25));
     box-shadow:0 2px 5px rgba(150,133,102,.2) inset,0 1px 0 rgba(255,255,255,.85);
   }
+  /* 空占位键（收藏一…收藏六）：与真实键同宽同高，呈浅色虚位，点击打开电台库「收藏」页添加 */
+  .quick-favs .featured-chip.qf-placeholder{
+    color:var(--ink-3);font-weight:600;
+    background:linear-gradient(180deg,rgba(230,223,208,.5),rgba(242,236,224,.3));
+    box-shadow:0 2px 5px rgba(150,133,102,.18) inset,0 1px 0 rgba(255,255,255,.85),
+      0 0 0 1px rgba(216,207,187,.6);
+  }
+  .quick-favs .featured-chip.qf-placeholder::before{display:none}
+  .quick-favs .featured-chip.qf-placeholder:active{transform:translateY(3px)}
 
   /* ── 底栏：4 按钮奶白拟物风（点击弹出对应 tab） ── */
   .bottom-bar{
@@ -1321,10 +1330,12 @@
     .ctrl-btn svg{width:28px;height:28px}
     .play-btn{width:90px;height:90px}
     .play-btn svg{width:39px;height:39px}
-    /* 频谱带固定 120px 高（紧张时向下可缩到 36px），画布每帧按 clientHeight 重设、长高安全；
+    /* 频谱带收窄到 84px（紧张时向下可缩到 30px），画布每帧按 clientHeight 重设、长高安全；
        卡片长出的其余富余由 .screen-main（LCD）吸收，内容行居中，整屏无空白 */
-    .viz-wrap{flex:0 0 120px;min-height:36px;height:auto}
+    .viz-wrap{flex:0 0 84px;min-height:30px;height:auto}
     canvas.viz{height:100%}
+    /* 两行各三的快捷台：每行键高收敛，整体更紧凑、给 LCD 让出空间 */
+    .quick-favs .featured-chip{height:50px;font-size:12.5px;border-radius:14px}
     /* 底栏行是 auto、随内容贴在视口底部（富余已被播放面板行的 1fr 吃掉） */
     .bottom-bar{padding:8px 4px 0}
     .bb-btn{padding:12px 4px 10px}
@@ -4302,27 +4313,32 @@ document.addEventListener('DOMContentLoaded', init);
     if(!box) return;
     var favs = (typeof state!=='undefined' && state.favs) ? state.favs : [];
     box.innerHTML = '';
-    if(!favs.length){
-      var tip = document.createElement('div');
-      tip.className = 'qf-empty';
-      tip.textContent = '还没有收藏电台 · 点底部电台库里的心形即可固定到这里';
-      box.appendChild(tip);
-      return;
-    }
-    favs.slice(0,3).forEach(function(f){
-      var st = playableStation(f);          // 沿用收藏项自身的源，并做可用性排序
+    var SLOTS = 6;                          // 两行各三：填满收藏区；空位显示「收藏N」占位
+    var CN = ['一','二','三','四','五','六'];
+    for(var i=0;i<SLOTS;i++){
+      var f = favs[i];
       var b = document.createElement('button');
       b.className = 'chip featured-chip';
-      b.setAttribute('data-name', f.name);
-      b.title = f.name;
       var span = document.createElement('span');
       span.className = 'qf-name';
-      span.textContent = f.name;
-      b.appendChild(span);
-      b.onclick = function(){ playSafe(st); };
+      if(f){
+        var st = playableStation(f);        // 沿用收藏项自身的源，并做可用性排序
+        b.setAttribute('data-name', f.name);
+        b.title = f.name;
+        span.textContent = f.name;
+        b.appendChild(span);
+        (function(stn){ b.onclick = function(){ playSafe(stn); }; })(st);
+      } else {
+        b.className += ' qf-placeholder';
+        b.setAttribute('data-name', '收藏'+CN[i]);
+        b.title = '收藏'+CN[i]+'（点此打开电台库·收藏页添加）';
+        span.textContent = '收藏'+CN[i];
+        b.appendChild(span);
+        b.onclick = function(){ if(window.watersOpenRadioModal) window.watersOpenRadioModal('favSection'); };
+      }
       box.appendChild(b);
-    });
-    // 三个键等宽时名字长了会截断：适度缩短名称，保证可读
+    }
+    // 等宽时名字长了会截断：适度缩短名称，保证可读
     fitQuickLabels(box);
     markQuickNow();
   }
