@@ -18,6 +18,10 @@ import android.os.PowerManager;
 
 import org.json.JSONObject;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 /**
  * WATERS RADIO · 前台播放服务（纯原生 API，无 androidx 依赖）
  * ------------------------------------------------------------------
@@ -45,6 +49,10 @@ public class RadioPlaybackService extends Service {
     /* 当前播放信息（由 JS 桥上报） */
     private volatile String nowName = "";
     private volatile boolean nowPlaying = false;
+    private volatile String nowUrl = "";        /* 当前流地址（ICY 元数据抓取用） */
+    private volatile String nowTitle = "";       /* ICY 推来的实时曲目（歌手 - 歌名） */
+    private volatile IcyMetadataTask icyTask = null;
+    private volatile String icyUrl = "";
 
     /* ------------------------------------------------------------
      * Service 生命周期
@@ -63,7 +71,10 @@ public class RadioPlaybackService extends Service {
         if (intent != null && intent.hasExtra("name")) {
             nowName = intent.getStringExtra("name");
             nowPlaying = intent.getBooleanExtra("playing", false);
+            nowUrl = intent.getStringExtra("url"); if (nowUrl == null) nowUrl = "";
+            nowTitle = intent.getStringExtra("title"); if (nowTitle == null) nowTitle = "";
             updateSession();
+            startIcyIfNeeded();
         }
         /* START_STICKY：被系统杀掉后自动重启，尽量保住后台播放 */
         return START_STICKY;
@@ -71,6 +82,7 @@ public class RadioPlaybackService extends Service {
 
     @Override
     public void onDestroy() {
+        stopIcy();
         releaseLocks();
         if (mediaSession != null) {
             mediaSession.release();
@@ -164,8 +176,9 @@ public class RadioPlaybackService extends Service {
     private void updateSession() {
         if (Build.VERSION.SDK_INT >= 21 && mediaSession != null) {
             android.media.MediaMetadata.Builder md = new android.media.MediaMetadata.Builder();
-            md.putString(android.media.MediaMetadata.METADATA_KEY_TITLE,
-                nowName.isEmpty() ? "WATERS RADIO" : nowName);
+            String sessionTitle = !nowTitle.isEmpty() ? nowTitle
+                : (nowName.isEmpty() ? "WATERS RADIO" : nowName);
+            md.putString(android.media.MediaMetadata.METADATA_KEY_TITLE, sessionTitle);
             md.putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, "Waters Radio");
             md.putLong(android.media.MediaMetadata.METADATA_KEY_DURATION, -1);  /* 直播流未知时长 */
             mediaSession.setMetadata(md.build());
@@ -187,6 +200,107 @@ public class RadioPlaybackService extends Service {
         }
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(NOTIF_ID, buildNotification());
+    }
+
+    /* ------------------------------------------------------------
+     * ICY / 流内元数据抓取（APK 独有）
+     * ------------------------------------------------------------------
+     * 音频实际由 WebView 的 <audio> 播放，原生无法直接拿到段内 ICY；
+     * 故在此另开一条「只读取元数据」的并行连接：带 Icy-MetaData:1 请求，
+     * 按 icy-metaint 间隔解析 StreamTitle，推回 WebView 的 window.__onIcy。
+     * 代价：与播放共用同一流，移动网络下带宽约翻倍（仅 Icecast/SHOUTcast 裸流支持，
+     * HLS 走 ID3 不在本实现范围）。stop 时断开。
+     * ---------------------------------------------------------- */
+    private interface IcyListener { void onTitle(String t); }
+
+    private void startIcyIfNeeded() {
+        if (!nowPlaying || nowUrl.isEmpty()) { stopIcy(); return; }
+        String u = nowUrl.toLowerCase();
+        if (u.contains(".m3u8") || u.contains(".m3u") || u.contains(".pls")) { stopIcy(); return; }
+        if (icyTask != null && icyUrl != null && icyUrl.equals(nowUrl)) return; // 已在抓同一路
+        stopIcy();
+        icyUrl = nowUrl;
+        icyTask = new IcyMetadataTask(nowUrl, new IcyListener() {
+            @Override public void onTitle(String t) {
+                nowTitle = t;
+                updateSession();
+                callJs("window.__onIcy && window.__onIcy(" + JSONObject.quote(t) + ")");
+            }
+        });
+        icyTask.start();
+    }
+
+    private void stopIcy() {
+        if (icyTask != null) { icyTask.stop(); icyTask = null; }
+        icyUrl = "";
+    }
+
+    private static class IcyMetadataTask extends Thread {
+        private final String url;
+        private final IcyListener listener;
+        private volatile boolean stopped = false;
+        private String lastTitle = "";
+
+        IcyMetadataTask(String url, IcyListener l) { this.url = url; this.listener = l; }
+        void stop() { stopped = true; this.interrupt(); }
+
+        @Override
+        public void run() {
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setRequestProperty("Icy-MetaData", "1");
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(0);
+                conn.connect();
+                String mi = conn.getHeaderField("icy-metaint");
+                int metaint = -1;
+                if (mi != null) { try { metaint = Integer.parseInt(mi.trim()); } catch (Exception ignore) {} }
+                if (metaint <= 0) return; // 服务器不支持 ICY 元数据
+                InputStream in = conn.getInputStream();
+                byte[] buf = new byte[metaint];
+                while (!stopped) {
+                    int total = 0;
+                    while (total < metaint) {
+                        int r = in.read(buf, total, metaint - total);
+                        if (r < 0) return;
+                        total += r;
+                        if (stopped) return;
+                    }
+                    int lenByte = in.read();
+                    if (lenByte < 0) return;
+                    int metaLen = lenByte * 16;
+                    if (metaLen > 0) {
+                        byte[] meta = new byte[metaLen];
+                        int got = 0;
+                        while (got < metaLen) {
+                            int r = in.read(meta, got, metaLen - got);
+                            if (r < 0) return;
+                            got += r;
+                        }
+                        String title = parseStreamTitle(new String(meta, "UTF-8"));
+                        if (!title.isEmpty() && !title.equals(lastTitle)) {
+                            lastTitle = title;
+                            if (listener != null) listener.onTitle(title);
+                        }
+                    }
+                }
+            } catch (Exception ignore) {
+                // 网络异常：静默退出，下次播放再试
+            } finally {
+                if (conn != null) try { conn.disconnect(); } catch (Exception ignore) {}
+            }
+        }
+
+        /* 形如：StreamTitle='歌手 - 歌名';StreamUrl=''; */
+        private String parseStreamTitle(String s) {
+            int i = s.indexOf("StreamTitle=");
+            if (i < 0) return "";
+            int q1 = s.indexOf('\'', i);
+            int q2 = s.indexOf('\'', q1 + 1);
+            if (q1 < 0 || q2 < 0) return "";
+            return s.substring(q1 + 1, q2).trim();
+        }
     }
 
     /* ------------------------------------------------------------
@@ -219,7 +333,8 @@ public class RadioPlaybackService extends Service {
         }
         b.setSmallIcon(android.R.drawable.ic_media_play)
          .setContentTitle("WATERS RADIO")
-         .setContentText(nowName.isEmpty() ? "正在播放电台" : nowName)
+         .setContentText(!nowTitle.isEmpty() ? nowTitle
+            : (nowName.isEmpty() ? "正在播放电台" : nowName))
          .setContentIntent(contentPi)
          .setOngoing(true)
          .setOnlyAlertOnce(true);
@@ -276,7 +391,11 @@ public class RadioPlaybackService extends Service {
         public void onNowPlaying(String json) {
             try {
                 JSONObject o = new JSONObject(json);
-                MainActivity.postToService(o.optString("name", ""), o.optBoolean("playing", false));
+                MainActivity.postToService(
+                    o.optString("name", ""),
+                    o.optBoolean("playing", false),
+                    o.optString("url", ""),
+                    o.optString("title", ""));
             } catch (Exception ignored) {}
         }
     }
