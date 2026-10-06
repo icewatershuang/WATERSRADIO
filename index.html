@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v39</title>
+<title>WATERS RADIO · v40</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1280,14 +1280,22 @@
     .container{
       height:auto;min-height:100vh;min-height:100dvh;overflow:visible;
       grid-template-columns:1fr;
-      grid-template-rows:auto auto auto;   /* 三行：顶栏 / 播放面板 / 底栏 */
+      /* 三行：顶栏 / 播放面板 / 底栏。
+         ⚠️ 行高必须是 auto auto + minmax(min-content,1fr)：
+         若第三行也用 auto，align-content 的默认拉伸会把视口富余高度平摊给三行
+         （实测各 +89px），顶栏和播放面板被各自撑高，标题与主屏之间凭空出现一大段空白。
+         现在前两行贴内容，富余空间全部归底栏行，底栏再 align-self:end 钉在视口底部。 */
+      grid-template-rows:auto auto minmax(min-content,1fr);
       grid-template-areas:"nav" "left" "bar";
       padding:12px 14px 14px;row-gap:4px;column-gap:0;
     }
     /* 竖屏：标题与设置键同排、底部对齐（标题底端 = 圆形设置键底端）
        花体 line-height:1 时，基线以下仍留有约 0.128em 盒内空白，
        故整体下移 0.128em，让「字迹底端」而非「文本框底端」与圆键底端对齐 */
-    .nav-inner{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:end;padding:6px 0 2px}
+    .nav-inner{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:end;padding:6px 0 6px}
+    /* 圆圈缩小后 bottom 同步校准：竖屏顶栏底部内边距 6px + 标题 translateY(.128em) 下沉，
+       bottom:0 时齿轮圆圈底端恰好与标题墨迹底端对齐（Δ≈0.5px） */
+    .nav-icon{bottom:0}
     .brand-inner{max-width:none;padding-left:14px}   /* 保留原左空，确保墨迹与主显示屏左缘对齐 */
     .brand-text h1{font-size:55.9104px;transform:translateY(.128em)}
     .lp-left{align-items:stretch}
@@ -1310,8 +1318,8 @@
     .play-btn svg{width:39px;height:39px}
     .viz-wrap{height:36px}
     canvas.viz{height:36px}
-    /* 底栏在最底部一行 */
-    .bottom-bar{padding:8px 4px 0}
+    /* 底栏在最后一行（该行是 1fr，吸收视口富余高度），align-self:end 钉在视口底部 */
+    .bottom-bar{padding:8px 4px 0;align-self:end}
     .bb-btn{padding:12px 4px 10px}
     .bb-glyph{font-size:22px}
     .bb-svg{width:22px;height:22px}
