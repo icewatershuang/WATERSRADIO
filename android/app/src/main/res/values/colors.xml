@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 启动图标自适应背景：奶白/象牙（与 App 默认主题同源） -->
+    <color name="ic_launcher_background">#F4EEDD</color>
+</resources>
