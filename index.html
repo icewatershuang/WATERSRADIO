@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v42</title>
+<title>WATERS RADIO · v43</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -473,7 +473,7 @@
     width:100%;max-width:470px;height:100%;max-height:100%;
     padding:clamp(24px,5vh,44px) 26px 24px;margin:0;
     display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-    gap:clamp(14px,2.4vh,30px);
+    gap:clamp(12px,2vh,26px);   /* v43: 2.4vh→2vh / 上限 30→26，为刊头微标腾高度，桌面一屏仍装下 */
     background:linear-gradient(168deg,#fffefa 0%,var(--cream-1) 55%,var(--cream-2) 100%);
     border-radius:28px;
     box-shadow:
@@ -500,7 +500,7 @@
   /* 屏面：内嵌凹槽 */
   .screen-main{
     display:flex;align-items:center;gap:18px;
-    padding:15px 17px 13px;border-radius:14px;
+    padding:14px 17px 12px;border-radius:14px;   /* v43: 15/13→14/12，抵消刊头高度 */
     background:linear-gradient(170deg,#3a2c1e,var(--lcd-bg) 45%,#241b12);
     box-shadow:0 0 0 1px rgba(90,70,45,.7),0 3px 7px rgba(70,55,35,.55) inset;
     position:relative;overflow:hidden;
@@ -538,9 +538,10 @@
     align-self:flex-start;
     transform:translateY(-.12em);
   }
-  /* 频谱条：嵌在外框底部凹槽里，与屏同色系（高度＝原 39px 的 1.2 倍） */
+  /* 频谱条：嵌在外框底部凹槽里，与屏同色系（高度＝原 39px 的 1.2 倍）
+     v43：左右不留 margin，与 .screen-main 完全同宽（上下两块屏对齐更协调） */
   .viz-wrap{
-    height:46.8px;margin:6px 6px 1px;border-radius:9px;overflow:hidden;
+    height:46.8px;margin:6px 0 1px;border-radius:9px;overflow:hidden;
     background:linear-gradient(180deg,#33261a,#241b12);
     box-shadow:0 0 0 1px rgba(90,70,45,.55),0 2px 4px rgba(70,55,35,.5) inset;
     position:relative;
@@ -571,19 +572,25 @@
     box-shadow:0 0 0 1px rgba(255,180,85,.5),0 0 26px rgba(255,180,85,.28) inset;
   }
 
-  .screen-info{flex:1;min-width:0}
+  .screen-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+  /* v43 屏面刊头：小号大字距的英文微标（ON AIR / STANDBY），电台播音室的仪式感 */
+  .np-label{
+    font-size:9px;font-weight:600;letter-spacing:.42em;color:var(--lcd-dim);
+    opacity:.9;margin:0 0 5px;white-space:nowrap;overflow:hidden;
+  }
   .np-name{
     font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;
-    font-size:21px;font-weight:600;letter-spacing:-.2px;
-    color:var(--lcd-glow);margin:0 0 4px;
+    font-size:22px;font-weight:600;letter-spacing:-.2px;line-height:1.22;
+    color:var(--lcd-glow);margin:0 0 6px;
     text-shadow:0 0 12px rgba(255,180,85,.4);
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+    overflow:hidden;text-overflow:ellipsis;word-break:break-word;
   }
   .np-meta{
-    font-size:10.5px;color:var(--lcd-dim);margin:0 0 9px;
+    font-size:10.5px;color:var(--lcd-dim);margin:0 0 7px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    font-family:ui-monospace,"SF Mono",Consolas,monospace;
   }
+  .np-meta:empty{display:none}   /* 无徽章时整行隐藏（v43 起不再显示 URL，减少凌乱） */
   .np-meta a{color:var(--lcd-dim)}
   .proxy-badge{
     display:inline-block;vertical-align:middle;
@@ -595,8 +602,9 @@
   .proxy-badge.warn{color:#8a4a12;background:#f7e0c4;border-color:#e2b483}
   /* https 直连：冷色调，和"代理中转"的绿区分开 */
   .proxy-badge.ok{color:#14547a;background:#cfe4f2;border-color:#94c0dd}
-  .np-status{display:inline-flex;align-items:center;gap:7px;font-size:11px;
-    color:var(--lcd-dim);letter-spacing:.06em}
+  .np-status{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;
+    color:var(--lcd-dim);letter-spacing:.06em;white-space:nowrap;
+    max-width:100%;overflow:hidden}
   .np-status .dot{width:7px;height:7px;border-radius:50%;background:var(--lcd-dim);flex-shrink:0}
   .np-status.playing .dot{background:var(--lcd-glow);box-shadow:0 0 8px var(--lcd-glow)}
   .np-status.buffering .dot{background:#ffb455;animation:pulse 1s infinite}
@@ -1261,7 +1269,7 @@
     .lcd-time{font-size:27.6px}
     .lcd-date{font-size:15px}
     .lcd-sec{font-size:12px}
-    .viz-wrap{height:32.4px;margin:5px 5px 1px}
+    .viz-wrap{height:32.4px;margin:5px 0 1px}
     canvas.viz{height:32.4px}
     .grille i{width:6px;height:6px}
     .controls{gap:24px;margin:0}
@@ -1320,7 +1328,8 @@
     .screen{padding:6px;flex:1 1 auto}
     .screen-main{padding:12px 14px 11px;flex:1 1 auto}   /* LCD 随卡片长高，内容行垂直居中（align-items:center） */
     .grille{display:none}
-    .artwork{width:60px;height:60px;font-size:24px}
+    .artwork{width:70px;height:70px;font-size:28px}   /* v43: 60→70，填一点竖屏 LCD 的空旷感 */
+    .np-name{font-size:23px}                           /* v43: 竖屏台名再大一号 */
     .lcd-clock{gap:2px;padding-left:12px}
     .lcd-time{font-size:31.2px}
     .lcd-date{font-size:16.2px}
@@ -1459,6 +1468,7 @@
         <div class="screen-main">
           <div class="artwork" id="artwork">W</div>
           <div class="screen-info">
+            <div class="np-label" id="npLabel">STANDBY</div>
             <h1 class="np-name" id="nowName">未播放</h1>
             <p class="np-meta" id="nowMeta">从底部电台库选择一个电台开始收听</p>
             <div class="np-status" id="status"><span class="dot"></span><span id="statusText">空闲</span></div>
@@ -2341,6 +2351,14 @@ function setStatus(kind, text){
   el.classList.remove('playing','buffering','error');
   if(kind && kind!=='idle') el.classList.add(kind);
   tx.innerText = text;
+  /* v43：屏面刊头随播放状态切换（播音室仪式感） */
+  const label = $('#npLabel');
+  if(label){
+    label.innerText = kind==='playing' ? 'NOW ON AIR'
+                    : kind==='buffering' ? 'TUNING…'
+                    : kind==='error' ? 'SIGNAL LOST'
+                    : 'STANDBY';
+  }
 }
 
 function stop(){
@@ -3404,7 +3422,7 @@ function startViz(){
 
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 1024;                // 提高频率分辨率（binHz≈43Hz），低频段才分得开
-      analyser.smoothingTimeConstant = 0.75;  // 底层平滑，避免抖动
+      analyser.smoothingTimeConstant = 0.80;  // 底层平滑（v43: 0.75→0.80，动态更绵软朦胧）
 
       // 透明防破音限制器：阈值 -1dBFS、比率 20:1、零 knee，仅在接近削顶时起作用，正常听感无染色
       limiter = audioCtx.createDynamicsCompressor();
@@ -3436,7 +3454,7 @@ function startViz(){
      *  4. 平滑 + 非对称包络：上升快、下落慢（类似真实频谱仪的余晖），
      *     视觉更顺滑、不闪。
      * ============================================ */
-    const BARS = 21;                            // 16 根增加三分之一 → 21 根（16×4/3≈21.3）
+    const BARS = 14;                            // v43: 21 → 14（21÷1.5），柱宽约 1.5 倍，更接近老式音响频谱仪的粗柱
     const MIN_HZ = 45, MAX_HZ = 12000;         // 上限收到 12kHz：16kHz 以上音乐几乎没能量，柱会"死"
     const peak = new Float32Array(BARS);      // 平滑后的柱高 0~1
     const decay = 0.16;                       // 下落速度
@@ -3479,8 +3497,8 @@ function startViz(){
     const AGC_UP = 0.02;      // 参考电平上升速度（慢，避免喘）
     const AGC_DOWN = 0.06;    // 参考电平下降速度（稍快，跟得上安静段）
 
-    // 老式车载频谱的琥珀色系（顶部亮橙 → 底部深琥珀）
-    const CORE_TOP = '#ffd47a', CORE_MID = '#e79a35', CORE_BOT = '#9c5a12';
+    /* v43: 频谱配色改为主屏荧光数码钟同源的绿色系（#5cffa0），老式音响绿色 VFD 频谱风 */
+    const CORE_TOP = '#c9ffdf', CORE_MID = '#5cffa0', CORE_BOT = '#0e6b43';
     // 是否支持 ctx.filter（旧内核可能没有，降级为纯叠色虚化）
     const blurOK = (function(){ try{ return typeof ctx.filter === 'string'; }catch(e){ return false; } })();
     // 单调递增的秒计时（用 rAF 时间戳，不依赖 Date）
@@ -3569,15 +3587,23 @@ function startViz(){
         const x = i*bw + (bw - fillW)/2;
         const y = h-bh;
 
-        /* ---- 老式车载频谱显示器风格 ----
-         * 特征：柱体粗颗粒（磨砂塑料/段码管质感）+ 边缘虚化拖影 + 顶端更亮 */
-        // A. 外层：模糊光晕（把柱体画大一点、低透明度，制造虚化扩散）
+        /* ---- 老式音响频谱仪风格（v43: 绿色荧光 + 加重雾化） ----
+         * 特征：柱体粗颗粒（磨砂/段码管质感）+ 边缘虚化拖影 + 顶端更亮 */
+        // A. 外层：模糊光晕（两层叠加：近距柔边 + 远距辉光，制造"雾化"扩散）
         ctx.save();
-        if(blurOK){ ctx.filter = 'blur(1.6px)'; }
-        ctx.globalAlpha = 0.45;
-        ctx.fillStyle = CORE_TOP;
+        if(blurOK){ ctx.filter = 'blur(3px)'; }
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = CORE_MID;
         ctx.beginPath();
-        roundTopRect(ctx, x-1, y-1, fillW+2, bh+1, Math.min((fillW+2)/2, bh));
+        roundTopRect(ctx, x-1.5, y-1.5, fillW+3, bh+2, Math.min((fillW+3)/2, bh));
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        if(blurOK){ ctx.filter = 'blur(6px)'; }
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = CORE_MID;
+        ctx.beginPath();
+        roundTopRect(ctx, x-3, y-3, fillW+6, bh+4, Math.min((fillW+6)/2, bh));
         ctx.fill();
         ctx.restore();
 
@@ -3601,15 +3627,15 @@ function startViz(){
           const gx = x + Math.random()*fillW;
           const gy = y + Math.random()*bh;
           const gs = 0.7 + Math.random()*1.4;
-          ctx.fillStyle = Math.random() > 0.5 ? '#fff3d6' : '#7a4d10';
+          ctx.fillStyle = Math.random() > 0.5 ? '#eafff3' : '#0a4a30';
           ctx.fillRect(gx, gy, gs, gs);
         }
         ctx.restore();
 
         // D. 顶端高光：老式屏柱顶那道亮线
         ctx.save();
-        ctx.globalAlpha = 0.5;
-        ctx.fillStyle = '#ffe9b8';
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = '#dbffe9';
         ctx.fillRect(x+1, y, Math.max(1, fillW-2), 1);
         ctx.restore();
       }
@@ -3617,7 +3643,7 @@ function startViz(){
       // E. 整屏扫描线 + 轻微噪点，强化 CRT/段码管质感
       ctx.save();
       ctx.globalAlpha = 0.10;
-      ctx.fillStyle = '#2a1c0e';
+      ctx.fillStyle = '#06231a';
       for(let sy=0; sy<h; sy+=3){ ctx.fillRect(0, sy, w, 1); }
       ctx.restore();
       ctx.save();
@@ -3696,7 +3722,10 @@ function prevNext(dir){
 /* ---------- 10. 渲染 ---------- */
 function renderNow(){
   const cur = state.current;
-  $('#nowName').innerText = cur ? cur.name : '未播放';
+  /* v43：屏面显示规整短名（displayName 收主名，如「80后音悦台」），
+     CSS 允许两行折行，长名不再截成「W…」这种残名 */
+  $('#nowName').innerText = cur ? displayName(cur.name) : '未播放';
+  const nl = $('#nowLabel'); if(nl) nl.innerText = cur ? 'NOW ON AIR' : 'STANDBY';
   if(cur){
     const isHttp = needProxy(cur.url);
     const httpsOk = isHttp ? (httpsKnownGood(cur.url) === true) : true;
@@ -3709,9 +3738,12 @@ function renderNow(){
               ? `<span class="proxy-badge ok" title="http 明文流经自建中转站（${ownedCount} 路热备，当前 ${PROXY_ACTIVE||'-'}）">中转·${ownedCount}路热备</span>`
               : `<span class="proxy-badge warn" title="公共代理实测多已失效，建议部署自建 Worker（见 worker/部署说明.md）">公共代理·${PROXY_LIST.length}路</span>`)
           : '');
-    $('#nowMeta').innerHTML = badge + `<a href="${cur.url}" target="_blank" rel="noopener">${escapeHtml(cur.url)}</a>`;
+    /* v43：不再显示流 URL（屏面更简洁）；完整台名/地址仍可通过台名 title 查看 */
+    $('#nowMeta').innerHTML = badge;
+    $('#nowName').title = cur.name;
   } else {
     $('#nowMeta').innerHTML = '从下方选择电台，或粘贴直播流 URL';
+    $('#nowName').title = '';
   }
 }
 
