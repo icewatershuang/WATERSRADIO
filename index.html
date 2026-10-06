@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v38</title>
+<title>WATERS RADIO · v39</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -450,8 +450,8 @@
   .brand-text .subtitle{font-size:11px;color:var(--ink-3);margin-top:2px;letter-spacing:.04em}
 
   .nav-icon{
-    position:absolute;right:2px;bottom:14px;   /* 右栏移除后：钉在顶栏右缘，不参与栅格 */
-    width:46px;height:46px;border-radius:50%;
+    position:absolute;right:4px;bottom:10px;   /* 右栏移除后：钉在顶栏右缘，不参与栅格；圆圈缩小到 38px */
+    width:38px;height:38px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     background:linear-gradient(160deg,var(--key-top),var(--key-bot));
     box-shadow:0 1px 0 var(--key-top) inset,0 -2px 0 var(--key-edge) inset,
@@ -463,7 +463,7 @@
     transform:translateY(2px);
     box-shadow:0 1px 0 var(--key-edge) inset,0 1px 2px rgba(150,133,102,.28);
   }
-  .nav-icon svg{width:23px;height:23px}
+  .nav-icon svg{width:19px;height:19px}
 
   /* ========== 左栏 · 播放面板 ========== */
   .lp-left{grid-area:left;display:flex;align-items:center;justify-content:center;
@@ -1282,14 +1282,14 @@
       grid-template-columns:1fr;
       grid-template-rows:auto auto auto;   /* 三行：顶栏 / 播放面板 / 底栏 */
       grid-template-areas:"nav" "left" "bar";
-      padding:12px 14px 14px;row-gap:12px;column-gap:0;
+      padding:12px 14px 14px;row-gap:4px;column-gap:0;
     }
     /* 竖屏：标题与设置键同排、底部对齐（标题底端 = 圆形设置键底端）
        花体 line-height:1 时，基线以下仍留有约 0.128em 盒内空白，
        故整体下移 0.128em，让「字迹底端」而非「文本框底端」与圆键底端对齐 */
-    .nav-inner{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:end;padding:6px 0 14px}
+    .nav-inner{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:end;padding:6px 0 2px}
     .brand-inner{max-width:none;padding-left:14px}   /* 保留原左空，确保墨迹与主显示屏左缘对齐 */
-    .brand-text h1{font-size:43.008px;transform:translateY(.128em)}
+    .brand-text h1{font-size:55.9104px;transform:translateY(.128em)}
     .lp-left{align-items:stretch}
     .now-playing{
       max-width:none;height:auto;padding:16px;border-radius:22px;
@@ -1327,13 +1327,13 @@
     .modal-card{width:100%;max-width:none;max-height:88vh;max-height:88dvh;border-radius:22px}
   }
 
-  /* ========== 窄屏竖屏：标题再收一档字号 ==========
-     标题花体的固有宽度 ≈ 7.14 × 字号（实测 43.008px → 墨迹 307px），
-     而标题可用宽度 = 视口 − 100（容器左右内边距 28 + 顶栏内边距 0 + 栏间距 12 + 设置键 46 + 品牌左空 14）。
-     所以 43.008px 需要视口 ≥ 407px 才不折行；更窄的机器（360 / 375 / 390）在此按视口线性收字号，
-     除数取 7.6（比实测 7.14 多留约 6% 余量），保证「Waters Radio」永远单行，且不会压到右侧设置键。 */
-  @media (orientation:portrait) and (max-width:420px){
-    .brand-text h1{font-size:calc((100vw - 100px)/7.6)}
+  /* ========== 窄屏竖屏：标题按视口线性收字号（在「不折行、不压设置键」前提下尽量大） ==========
+     标题花体的固有宽度 ≈ 7.14 × 字号（实测 55.9104px → 墨迹 399px）。
+     公式里减 100 比实际可用（视口 − 约 82：容器 28 + 品牌左空 14 + 设置键 38 + 右距 4 + 间距）更宽，
+     本身就留了约 18px 余量，故除数可取到 7.2（仅比实测 7.14 多约 1% 余量），
+     让窄屏手机拿到「贴边最大」的字号；更宽的设备（≥500px）直接用基准 55.9104px（=43.008×1.3）。 */
+  @media (orientation:portrait) and (max-width:500px){
+    .brand-text h1{font-size:calc((100vw - 100px)/7.2)}
   }
 
   /* ========== 手机横屏 / 极矮视口：单列布局，但整页可纵向滚动 ==========
