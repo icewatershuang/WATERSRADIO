@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v40</title>
+<title>WATERS RADIO · v41</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -604,6 +604,7 @@
   .np-status.playing #statusText{color:var(--lcd-glow)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
   .np-repair{font-size:10.5px;color:#ff9c6a;min-height:14px;margin:0}
+  .np-repair:empty{display:none}   /* 无提示时不占位，避免竖屏 space-between 在它两侧多出两个空隙档 */
 
   /* 扬声器格栅：拟物小细节（纯装饰） */
   .grille{
@@ -1281,11 +1282,13 @@
       height:auto;min-height:100vh;min-height:100dvh;overflow:visible;
       grid-template-columns:1fr;
       /* 三行：顶栏 / 播放面板 / 底栏。
-         ⚠️ 行高必须是 auto auto + minmax(min-content,1fr)：
-         若第三行也用 auto，align-content 的默认拉伸会把视口富余高度平摊给三行
-         （实测各 +89px），顶栏和播放面板被各自撑高，标题与主屏之间凭空出现一大段空白。
-         现在前两行贴内容，富余空间全部归底栏行，底栏再 align-self:end 钉在视口底部。 */
-      grid-template-rows:auto auto minmax(min-content,1fr);
+         ⚠️ 行高必须是 auto + minmax(min-content,1fr) + auto：
+         若三行全用 auto，align-content 的默认拉伸会把视口富余高度平摊给三行
+         （实测各 +89px），顶栏和播放面板被各自撑高，标题与主屏之间凭空出现一大段空白；
+         若富余全归底栏行（v40 的 auto auto 1fr），空白则堆在卡片与底栏之间。
+         现在让播放面板行吃掉富余（卡片长高、内部 space-between + 频谱长高消化），
+         顶栏贴内容、底栏贴视口底，整屏无空白。 */
+      grid-template-rows:auto minmax(min-content,1fr) auto;
       grid-template-areas:"nav" "left" "bar";
       padding:12px 14px 14px;row-gap:4px;column-gap:0;
     }
@@ -1302,9 +1305,11 @@
     .now-playing{
       max-width:none;height:auto;padding:16px;border-radius:22px;
       gap:12px;
+      /* 行高被 1fr 拉伸：富余全部交给 .screen（LCD+频谱长高），这里贴顶即可 */
+      justify-content:flex-start;
     }
-    .screen{padding:6px}
-    .screen-main{padding:12px 14px 11px}
+    .screen{padding:6px;flex:1 1 auto}
+    .screen-main{padding:12px 14px 11px;flex:1 1 auto}   /* LCD 随卡片长高，内容行垂直居中（align-items:center） */
     .grille{display:none}
     .artwork{width:60px;height:60px;font-size:24px}
     .lcd-clock{gap:2px;padding-left:12px}
@@ -1316,10 +1321,12 @@
     .ctrl-btn svg{width:28px;height:28px}
     .play-btn{width:90px;height:90px}
     .play-btn svg{width:39px;height:39px}
-    .viz-wrap{height:36px}
-    canvas.viz{height:36px}
-    /* 底栏在最后一行（该行是 1fr，吸收视口富余高度），align-self:end 钉在视口底部 */
-    .bottom-bar{padding:8px 4px 0;align-self:end}
+    /* 频谱带固定 120px 高（紧张时向下可缩到 36px），画布每帧按 clientHeight 重设、长高安全；
+       卡片长出的其余富余由 .screen-main（LCD）吸收，内容行居中，整屏无空白 */
+    .viz-wrap{flex:0 0 120px;min-height:36px;height:auto}
+    canvas.viz{height:100%}
+    /* 底栏行是 auto、随内容贴在视口底部（富余已被播放面板行的 1fr 吃掉） */
+    .bottom-bar{padding:8px 4px 0}
     .bb-btn{padding:12px 4px 10px}
     .bb-glyph{font-size:22px}
     .bb-svg{width:22px;height:22px}
