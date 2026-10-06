@@ -91,13 +91,15 @@ public class MainActivity extends Activity {
         }
     }
 
-    /* JS 桥把播放状态变化传给 Service，让它更新 MediaSession/通知 */
-    static void postToService(final String name, final boolean playing) {
+    /* JS 桥把播放状态变化传给 Service，让它更新 MediaSession/通知 + 抓取 ICY 元数据 */
+    static void postToService(final String name, final boolean playing, final String url, final String title) {
         if (instance == null) return;
         instance.runOnUiThread(() -> {
             Intent i = new Intent(instance, RadioPlaybackService.class);
             i.putExtra("name", name);
             i.putExtra("playing", playing);
+            i.putExtra("url", url);
+            i.putExtra("title", title);
             if (Build.VERSION.SDK_INT >= 26) {
                 instance.startForegroundService(i);
             } else {
