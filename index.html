@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v35</title>
+<title>WATERS RADIO · v36</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1826,6 +1826,17 @@ function $all(s){return document.querySelectorAll(s)}
 function isM3u8(url){return /\.m3u8($|\?)/i.test(url)}
 function isHttps(url){return /^https:\/\//i.test(url)}
 
+/* 是否跑在 APK 的 WebView 里（而非普通浏览器）。
+   APK 壳通过 addJavascriptInterface 注入了 window.WatersNative，
+   其中的 isApp() 恒返回 true；网页版没有这个桥，返回 false。
+   据此：APK 里 http:// 明文流可直连（WebView 已放行明文流量），
+   网页里仍受浏览器「混合内容拦截」限制，必须走 https 升级 / 代理。 */
+function isAppEnv(){
+  try{
+    return !!(window.WatersNative && typeof window.WatersNative.isApp === 'function' && window.WatersNative.isApp());
+  }catch(e){ return false; }
+}
+
 /* ============================================================
  * HTTPS 流代理配置（Cloudflare Worker）· 多路热备
  * ------------------------------------------------------------
@@ -2045,6 +2056,9 @@ function probeProxyPool(){
 /* 用最优代理包一层地址 */
 function proxify(url){
   if(!needProxy(url)) return url;                     // 已是 https，无需代理
+  /* APK 的 WebView 已放行明文流量，http 流可直连，无需代理；
+     浏览器（混合内容拦截）里才需要走这里。 */
+  if(isAppEnv()) return url;
   const list = proxiesSorted();
   if(!list.length) return url;                        // 一个代理都没有，原样返回
   PROXY_ACTIVE = list[0].name;
@@ -3155,6 +3169,13 @@ async function resolvePlayUrl(url){
     return url;                   // 已是 https，直连
   }
   if(!needProxy(url)){
+    return url;
+  }
+  /* APK 的 WebView 已放行明文流量（usesCleartextTraffic + networkSecurityConfig），
+     http:// 直播流可直连，无需 https 升级、无需走代理——
+     省一次网络往返，也少一个可能失效的中间节点。 */
+  if(isAppEnv()){
+    log(`【App 直连】明文 http 流在 WebView 内直接加载（跳过代理）`,'ok');
     return url;
   }
   // 1) 若该 host 已确认支持 https，直接升级
