@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v48</title>
+<title>WATERS RADIO · v49</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1362,11 +1362,13 @@
       justify-content:flex-start;
     }
     .screen{padding:6px;flex:1 1 auto}
-    .screen-main{padding:12px 14px 11px;flex:1 1 auto}   /* LCD 随卡片长高，内容行垂直居中（align-items:center） */
+    /* v49：竖屏一行「圆盘|台名|时钟」在窄机（视口≈320-360px）上会把台名挤成一字一行（用户截图）。
+       圆盘 70→54、行距 18→11、台名 23→21，给台名列让出 ~40px；时钟 1.3×（24.7px）保持不动 */
+    .screen-main{padding:12px 14px 11px;flex:1 1 auto;gap:11px}
     .grille{display:none}
-    .artwork{width:70px;height:70px;font-size:28px}   /* v43: 60→70，填一点竖屏 LCD 的空旷感 */
-    .np-name{font-size:23px}                           /* v43: 竖屏台名再大一号 */
-    .lcd-clock{gap:2px;padding-left:8px}
+    .artwork{width:54px;height:54px;font-size:22px}
+    .np-name{font-size:21px}
+    .lcd-clock{gap:2px;padding-left:7px}
     /* v44：DSEG7 段码数字比旧衬线数字宽约 1.8 倍，竖屏时钟字号需收小，
        否则右栏时钟会把台名挤成一字宽（实测 31.2px 时台名仅剩 31px） */
     .lcd-time{font-size:24.7px}
@@ -1398,6 +1400,13 @@
     /* 弹窗竖屏：占满整屏，更接近全屏卡片 */
     .radio-modal{padding:12px}
     .modal-card{width:100%;max-width:none;max-height:88vh;max-height:88dvh;border-radius:22px}
+  }
+
+  /* v49：≤359px 窄机竖屏——一行装不下「圆盘|台名|1.3×时钟」（时钟 DSEG7 实测 ~148px），
+     强制台名列 min-width:120px，时钟放不下就整行换到第二行右对齐（.screen-main 本就 flex-wrap:wrap），
+     台名不再被挤成一字一行 */
+  @media (orientation:portrait) and (max-width:359px){
+    .screen-info{min-width:120px}
   }
 
   /* ========== 窄屏竖屏：标题按视口线性收字号（在「不折行、不压设置键」前提下尽量大） ==========
