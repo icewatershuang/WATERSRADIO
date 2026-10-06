@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v37</title>
+<title>WATERS RADIO · v38</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1182,6 +1182,22 @@
   }
   .theme-chip:active{transform:translateY(2px)}
 
+  /* ===== 调音台：音色预设 + 开关 ===== */
+  .eq-switcher{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .eq-chip{
+    padding:9px 0;border:1px solid var(--line);border-radius:12px;
+    background:var(--key-top);color:var(--ink);font-size:13px;cursor:pointer;
+    text-align:center;transition:all .15s;
+  }
+  .eq-chip.active{ background:var(--amber); color:#fff; border-color:var(--amber); }
+  .eq-chip:active{transform:translateY(2px)}
+  .switch{ position:relative; display:inline-block; width:46px; height:26px; cursor:pointer; flex:0 0 auto; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch-track{ position:absolute; inset:0; background:var(--line); border-radius:13px; transition:.2s; }
+  .switch-track::before{ content:''; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .switch input:checked + .switch-track{ background:var(--amber); }
+  .switch input:checked + .switch-track::before{ transform:translateX(20px); }
+
   /* ========== 版权页 / 关于 ========== */
   .about-panel{padding:6px 20px 20px;display:flex;flex-direction:column;gap:18px}
   .about-logo{
@@ -1603,6 +1619,21 @@
         </div>
       </div>
 
+      <!-- ===== 调音台 ===== -->
+      <div class="setting-item">
+        <span class="setting-label">自动电平匹配<small style="display:block;font-size:11px;color:var(--ink-3);font-weight:400">把各台响度自动拉到一致</small></span>
+        <label class="switch"><input type="checkbox" id="autoLevel" /><span class="switch-track"></span></label>
+      </div>
+      <div class="setting-item setting-theme-block">
+        <span class="setting-label">音色预设</span>
+        <div class="eq-switcher" id="eqSwitcher">
+          <button class="eq-chip" data-eq="flat" type="button">原声</button>
+          <button class="eq-chip" data-eq="warm" type="button">暖声</button>
+          <button class="eq-chip" data-eq="clear" type="button">清晰</button>
+          <button class="eq-chip" data-eq="bass" type="button">重低音</button>
+        </div>
+      </div>
+
       <div class="setting-item">
         <span class="setting-label">立即全量校验</span>
         <span class="setting-btn" id="manualCheck">校验</span>
@@ -1775,7 +1806,9 @@ const LS = {
   vol:'waters_radio.vol.v1',
   mute:'waters_radio.mute.v1',
   blacklist:'waters_radio.blacklist.v2',   // 黑名单 {url: timestamp}
-  sourceCache:'waters_radio.sourceCache.v2' // 动态源缓存 {stationName: [urls]}
+  sourceCache:'waters_radio.sourceCache.v2',// 动态源缓存 {stationName: [urls]}
+  eq:'waters_radio.eq.v1',                  // 音色预设（flat/warm/clear/bass）
+  autoLevel:'waters_radio.autoLevel.v1'     // 自动电平匹配开关（1/0）
 };
 /* 本地存储可用性探测：部分浏览器在 file:// 下（尤其 Safari / 隐私模式）会禁用或抛错 localStorage，
    此时数据无法自动保存。这里在启动时做一次探测，并在保存失败时明确提示用户改用「数据备份」。 */
@@ -2244,7 +2277,10 @@ function apiThrottle(){
 const audio = new Audio();
 audio.crossOrigin = 'anonymous';
 audio.preload = 'none';
-audio.volume = parseFloat(loadStr(LS.vol,'0.8'));
+let masterVol = parseFloat(loadStr(LS.vol,'0.8'));   // 整体主音量（图建立前用 audio.volume 兜底，建立后改用 masterGain）
+audio.volume = masterVol;
+let autoLevelOn = loadStr(LS.autoLevel,'1')==='1';     // 默认开启自动电平匹配（响度归一）
+let eqPreset    = loadStr(LS.eq,'flat');               // 默认原声（平直）
 audio.muted = loadStr(LS.mute,'false')==='true';
 
 /* ===== 超时与宽容期参数（放宽判定，避免误杀正常直播流） ===== */
@@ -3064,6 +3100,7 @@ function tryPlayWithTimeout(st, timeout){
       setStatus('playing','播放中');
       updateBtn();
       startViz();
+      resetAudioLevels();
       resolve(true);
     };
     const onError = (e)=>{
@@ -3191,6 +3228,7 @@ function playStation(st, autoReplay=true){
   state.isPlaying = true;
   updateBtn();
   startViz();
+  resetAudioLevels();
 }
 
 /* ---------- 解析最终播放地址（http → https 自动升级 → 代理池热备兜底） ---------- */
@@ -3324,16 +3362,38 @@ function updateBtn(){
 
 /* ---------- 8. 频谱可视化 ---------- */
 let vizRAF=null, audioCtx=null, analyser=null, source=null;
+let eqLow=null, eqHigh=null, eqMid=null, levelGain=null, limiter=null, masterGain=null, tdata=null;
 function startViz(){
   try{
     if(!audioCtx){
       audioCtx = new (window.AudioContext||window.webkitAudioContext)();
       source = audioCtx.createMediaElementSource(audio);
+
+      // —— 调音台处理链：EQ(低切/空气感/中频 presence) → 自动电平 → 频谱 → 透明限制器 → 主音量 → 输出 ——
+      eqLow  = audioCtx.createBiquadFilter(); eqLow.type='lowshelf';  eqLow.frequency.value=120;    eqLow.gain.value=0;
+      eqHigh = audioCtx.createBiquadFilter(); eqHigh.type='highshelf'; eqHigh.frequency.value=8000;  eqHigh.gain.value=0;
+      eqMid  = audioCtx.createBiquadFilter(); eqMid.type='peaking';    eqMid.frequency.value=2500;   eqMid.Q.value=1.0; eqMid.gain.value=0;
+
+      levelGain = audioCtx.createGain(); levelGain.gain.value = 1;     // 自动电平匹配（响度归一）
+
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 1024;                // 提高频率分辨率（binHz≈43Hz），低频段才分得开
       analyser.smoothingTimeConstant = 0.75;  // 底层平滑，避免抖动
-      source.connect(analyser);
-      analyser.connect(audioCtx.destination);
+
+      // 透明防破音限制器：阈值 -1dBFS、比率 20:1、零 knee，仅在接近削顶时起作用，正常听感无染色
+      limiter = audioCtx.createDynamicsCompressor();
+      limiter.threshold.value = -1.0; limiter.knee.value = 0; limiter.ratio.value = 20;
+      limiter.attack.value = 0.003; limiter.release.value = 0.1;
+
+      masterGain = audioCtx.createGain(); masterGain.gain.value = masterVol; // 整体主音量（替代 audio.volume）
+
+      // 链路：source → eqLow → eqHigh → eqMid → levelGain → analyser → limiter → masterGain → destination
+      source.connect(eqLow); eqLow.connect(eqHigh); eqHigh.connect(eqMid);
+      eqMid.connect(levelGain); levelGain.connect(analyser); analyser.connect(limiter);
+      limiter.connect(masterGain); masterGain.connect(audioCtx.destination);
+
+      audio.volume = 1;                         // 元素音量交还给 masterGain，避免重复衰减
+      applyEqPreset(eqPreset);                  // 套用已保存的音色预设
     }
     const c = $('#viz'); const ctx = c.getContext('2d');
     const data = new Uint8Array(analyser.frequencyBinCount);
@@ -3427,6 +3487,22 @@ function startViz(){
     function draw(){
       vizRAF = requestAnimationFrame(draw);
       analyser.getByteFrequencyData(data);
+
+      // ===== 自动电平统一（响度匹配）：把各台输出 RMS 收敛到同一基准，解决"台间响度不一" =====
+      if(autoLevelOn && levelGain && !audio.muted){
+        if(!tdata) tdata = new Float32Array(analyser.fftSize);
+        analyser.getFloatTimeDomainData(tdata);
+        let s=0; for(let i=0;i<tdata.length;i++){ const v=tdata[i]; s += v*v; }
+        const rms = Math.sqrt(s/tdata.length);
+        if(rms > 0.0015){                         // 静音/暂停时跳过，避免误把增益拉满
+          const E = 0.18;                          // 目标基准 RMS
+          let desired = levelGain.gain.value * (E / rms);
+          if(desired < 0.5) desired = 0.5;          // 限幅 [-6dB, +4dB]
+          if(desired > 1.6) desired = 1.6;
+          levelGain.gain.value += (desired - levelGain.gain.value) * 0.04;  // 慢速平滑，防"喘"
+        }
+      }
+
       const w = c.width = c.clientWidth; const h = c.height = c.clientHeight;
       ctx.clearRect(0,0,w,h);
       const bw = w/BARS;
@@ -3531,6 +3607,37 @@ function startViz(){
   }catch(e){ /* ignore */ }
 }
 function stopViz(){ if(vizRAF) cancelAnimationFrame(vizRAF); vizRAF=null; }
+
+/* ---------- 8b. 调音台：EQ 预设 / 自动电平 / 主音量 ---------- */
+const EQ_PRESETS = {
+  flat:  { low:0,  high:0,  mid:0   },   // 原声（平直，最保真）
+  warm:  { low:3,  high:-1, mid:1.5 },   // 暖声（低频增厚、高频略收）
+  clear: { low:-2, high:4,  mid:3   },   // 清晰（低切去浑浊 + 高频空气感 + 中频 presence）
+  bass:  { low:5,  high:-1, mid:0   }    // 重低音（低频明显加强）
+};
+function applyEqPreset(name){
+  const p = EQ_PRESETS[name] || EQ_PRESETS.flat;
+  eqPreset = name;
+  saveStr(LS.eq, name);
+  if(eqLow){ eqLow.gain.value = p.low; eqHigh.gain.value = p.high; eqMid.gain.value = p.mid; }
+  document.querySelectorAll('#eqSwitcher .eq-chip').forEach(b=>{
+    b.classList.toggle('active', b.dataset.eq===name);
+  });
+}
+function setAutoLevel(on){
+  autoLevelOn = !!on;
+  saveStr(LS.autoLevel, autoLevelOn ? '1':'0');
+  if(levelGain) levelGain.gain.value = 1;   // 切换后从 1 重新收敛
+  const cb = $('#autoLevel'); if(cb) cb.checked = autoLevelOn;
+}
+function setVolume(v){    // v: 0~1
+  masterVol = Math.max(0, Math.min(1, v));
+  saveStr(LS.vol, String(masterVol));
+  if(masterGain) masterGain.gain.value = masterVol;
+  else audio.volume = masterVol;
+  const sl = $('#vol'); if(sl) sl.value = Math.round(masterVol*100);
+}
+function resetAudioLevels(){ if(levelGain) levelGain.gain.value = 1; }
 
 /* ---------- 9. 收藏 ---------- */
 function isFav(st){ if(!st) return false; return state.favs.some(f => f.url===st.url); }
@@ -3911,8 +4018,16 @@ function bind(){
     saveStr(LS.mute, String(audio.muted));
     updateMuteIcon();
   };
-  $('#vol').value = audio.volume*100;
-  $('#vol').oninput = e => { audio.volume = e.target.value/100; saveStr(LS.vol, String(audio.volume)); };
+  setVolume(masterVol);
+  $('#vol').oninput = e => setVolume(e.target.value/100);
+
+  // 调音台：自动电平匹配开关 + 音色预设
+  const alCb = $('#autoLevel');
+  if(alCb){ alCb.checked = autoLevelOn; alCb.onchange = e => setAutoLevel(e.target.checked); }
+  document.querySelectorAll('#eqSwitcher .eq-chip').forEach(b=>{
+    b.classList.toggle('active', b.dataset.eq===eqPreset);
+    b.onclick = ()=> applyEqPreset(b.dataset.eq);
+  });
   updateMuteIcon();
 
   var favBtnEl = $('#favBtn');
@@ -4769,6 +4884,17 @@ document.addEventListener('DOMContentLoaded', init);
     // 这样列表里的「https 直连」标记立刻正确，点击时也不用等探测
     setTimeout(warmHttpsProbe, 1500);
   });
+
+  // 调音台：暴露给自动化测试 / 调试
+  window._audioChain = {
+    get source(){return source}, get eqLow(){return eqLow}, get eqHigh(){return eqHigh},
+    get eqMid(){return eqMid}, get levelGain(){return levelGain}, get limiter(){return limiter},
+    get analyser(){return analyser}, get masterGain(){return masterGain},
+    get autoLevelOn(){return autoLevelOn}, get eqPreset(){return eqPreset}, get masterVol(){return masterVol},
+    get audioVolume(){return audio.volume},
+    ensure(){ if(!audioCtx) startViz(); return !!audioCtx; },
+    applyEqPreset, setAutoLevel, setVolume, resetAudioLevels, EQ_PRESETS
+  };
 })();
 </script>
 
