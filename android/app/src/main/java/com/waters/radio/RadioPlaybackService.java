@@ -262,9 +262,16 @@ public class RadioPlaybackService extends Service {
     }
 
     /* ------------------------------------------------------------
-     * JS 桥：WebView 通过 window.WatersNative.onNowPlaying(json) 上报
+     * JS 桥：WebView 通过 window.WatersNative.xxx() 交互
      * ---------------------------------------------------------- */
     public static class JsBridge {
+        /* 让网页判断自己正跑在 APK 的 WebView 里（而非普通浏览器）。
+           HTML 据此对 http:// 明文直播流跳过「https 升级 + 代理」，
+           直接加载 —— WebView 的 usesCleartextTraffic/networkSecurityConfig
+           已放行明文流量，浏览器却做不到。 */
+        @android.webkit.JavascriptInterface
+        public boolean isApp() { return true; }
+
         @android.webkit.JavascriptInterface
         public void onNowPlaying(String json) {
             try {
