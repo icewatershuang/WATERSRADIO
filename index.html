@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v52</title>
+<title>WATERS RADIO · v53</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -123,10 +123,8 @@
   html[data-theme="eink"] .brand-text h1{ text-shadow:0 1px 0 #fff, 0 -1px 0 #888; -webkit-text-stroke:.06em #000; }
   html[data-theme="eink"] .brand-text h1::after{ -webkit-text-stroke:.06em #000; }
   html[data-theme="eink"] .lcd-time, html[data-theme="eink"] .lcd-date, html[data-theme="eink"] .lcd-sec{ text-shadow:none; }
-  /* v51/v52：左下 LED 电平柱与 ICY 两行块跟随水墨灰阶（--lcd-glow 已是 #1a1a1a，这里补硬编码的暗条） */
+  /* v52：左下 ICY 两行块跟随水墨灰阶（--lcd-glow 已是 #1a1a1a） */
   html[data-theme="eink"] .np-icy{ text-shadow:none; color:#1a1a1a; }
-  html[data-theme="eink"] .np-ladder i{ background:rgba(0,0,0,.16); }
-  html[data-theme="eink"] .np-ladder i.on{ box-shadow:none; }
   /* 液晶屏渐变是硬编码棕色、频谱 canvas 是 JS 画的彩色 —— 统一灰阶化 */
   html[data-theme="eink"] .screen{
     background:linear-gradient(170deg,#c8c8c8,var(--lcd-bg) 45%,#9a9a9a) !important;
@@ -221,10 +219,8 @@
   }
   html[data-theme="mono"] .np-name{ text-shadow:none; }
   html[data-theme="mono"] .lcd-clock{ border-left-color:rgba(0,0,0,.35); }
-  /* v51/v52：左下 LED 电平柱与 ICY 两行块跟随黑白线稿 */
+  /* v52：左下 ICY 两行块跟随黑白线稿 */
   html[data-theme="mono"] .np-icy{ color:#000 !important; text-shadow:none; }
-  html[data-theme="mono"] .np-ladder i{ background:rgba(0,0,0,.16); }
-  html[data-theme="mono"] .np-ladder i.on{ background:#000; box-shadow:none; }
   /* 底栏字形图标与状态小点也去饱和（兜底，防将来再引入彩色字形） */
   html[data-theme="mono"] .bb-glyph,
   html[data-theme="mono"] .np-status .dot,
@@ -527,13 +523,8 @@
      现在由这一行单独 flex:1 吃掉 LCD 富余，跑马灯始终贴底 */
   .screen-row{display:flex;flex-wrap:wrap;align-items:center;gap:18px;flex:1 1 auto;min-height:0}
 
-  /* ===== v51：竖屏左列 = 圆盘 + LED 电平柱 =====
-     竖屏 LCD 被拉高后，圆盘列（54px 宽）只有中间一个 54px 圆盘，
-     上下各空 52~123px，就是用户圈出的「左下空挡」。这里让左列拉伸到整行高：
-     圆盘置顶、电平柱 flex:1 吃掉下方全部富余（底边贴到行底，空档归零）。
-     非竖屏 LCD 是内容高度、本就没有富余，故电平柱默认隐藏，布局不变。 */
+  /* 左列：竖屏时只有圆盘（LED 唱片）。下方「左下空挡」由 v52 的 ICY 两行块占满屏宽填充。 */
   .screen-left{display:flex;flex-direction:column;align-items:center;gap:9px;flex-shrink:0}
-  .np-ladder{display:none}
   /* v52：竖屏 ICY 两行块（演唱者 / 歌名）。默认全部隐藏 —— 横屏与桌面沿用原跑马灯。
      ⚠️ 位置放在 .screen-row 之后、占满屏宽左对齐：左列只有 54px 宽，
         DSEG7/常规字体都塞不下两行曲目文字（"Fly Me To The Moon" 在 54px 内要折 3 行） */
@@ -546,21 +537,6 @@
   }
   /* 英文按单词折行（不拆词），只有超长单词才强制断开 */
   .np-icy div{overflow-wrap:break-word;word-break:normal}
-  /* LED 电平柱：竖向段码条，由 analyser 的真实音频电平点亮。
-     column-reverse → 第一个 <i> 在最底部，故「点亮前 K 个」＝从底部往上亮 */
-  .np-ladder{
-    flex-direction:column-reverse;align-items:stretch;
-    gap:3px;width:100%;flex:1 1 auto;min-height:0;
-  }
-  .np-ladder i{
-    flex:1 1 auto;min-height:2px;border-radius:1px;
-    background:rgba(255,180,85,.13);
-    transition:background .1s linear, box-shadow .1s linear;
-  }
-  .np-ladder i.on{
-    background:var(--lcd-glow);
-    box-shadow:0 0 6px rgba(255,180,85,.55);
-  }
 
   /* ===== 屏内电子表时钟：纯 CSS 七段码数码管 ===== */
   .lcd-clock{
@@ -1428,11 +1404,8 @@
     .screen-row{align-items:stretch;align-content:stretch}
     .screen-info{justify-content:space-between}
     .lcd-clock{align-self:stretch}
-    /* v51：左列拉伸到整行高 —— 圆盘置顶、电平柱 flex:1 吃掉下方全部富余，
-       竖屏「左下空挡」被彻底填实（圆盘不再只是孤零零居中） */
-    .screen-left{align-self:stretch}
-    .artwork{flex:0 0 auto}
-    .np-ladder{display:flex}
+    /* v53：去掉 v51 的电平柱后，左列只剩圆盘——改为整行垂直居中，避免圆盘上方/下方出现空带 */
+    .screen-left{align-self:center}
     /* v52：竖屏改用「ICY 两行块」显示曲目信息，跑马灯让位（横屏/桌面反过来） */
     .np-icy.show{display:block}
     .np-marquee.show{display:none}
@@ -1578,7 +1551,6 @@
           <div class="screen-row">
           <div class="screen-left">
           <div class="artwork" id="artwork">W</div>
-          <div class="np-ladder" id="npLadder" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           </div><!-- /screen-left -->
           <div class="screen-info">
             <div class="np-label" id="npLabel">STANDBY</div>
@@ -3527,40 +3499,6 @@ function updateBtn(){
 let vizRAF=null, audioCtx=null, analyser=null, source=null;
 let eqLow=null, eqHigh=null, eqMid=null, levelGain=null, limiter=null, masterGain=null, tdata=null;
 
-/* ===== v51：竖屏左下 LED 电平柱 —— 由 analyser 的真实音频电平点亮 =====
-   与下方频谱同源（同一个 analyser），但这个是「整体响度」柱状条，不是频谱；
-   放在 LCD 内左侧，正好吃掉圆盘下方的富余高度，消除「左下空挡」。
-   column-reverse 让第一个 <i> 位于最底部，因此「点亮前 K 个」＝从底部往上亮。 */
-let ladderBox, ladderSegs=null, ladderLit=-1, ladderData=null;
-function updateLadder(){
-  if(ladderSegs === null){
-    ladderBox = document.getElementById('npLadder');
-    if(!ladderBox) return;
-    ladderSegs = ladderBox.children;
-  }
-  let lv = 0;
-  try{
-    if(analyser && audio && !audio.paused && !audio.muted){
-      if(!ladderData || ladderData.length !== analyser.frequencyBinCount){
-        ladderData = new Uint8Array(analyser.frequencyBinCount);
-      }
-      analyser.getByteFrequencyData(ladderData);
-      let sum = 0;
-      for(let i=0;i<ladderData.length;i++) sum += ladderData[i];
-      lv = (sum / ladderData.length) / 255;      // 0..1 全频段平均能量
-    }
-  }catch(e){}
-  const n = ladderSegs.length;
-  // 全频段平均能量常年偏低（大量 bin 接近 0），×2.2 放大到常用区间再点亮
-  const lit = Math.max(0, Math.min(n, Math.round(Math.min(1, lv * 2.2) * n)));
-  if(lit === ladderLit) return;                  // 无变化就不碰 DOM
-  ladderLit = lit;
-  for(let i=0;i<n;i++){
-    if(i < lit) ladderSegs[i].classList.add('on');
-    else        ladderSegs[i].classList.remove('on');
-  }
-}
-
 function startViz(){
   try{
     if(!audioCtx){
@@ -3686,7 +3624,6 @@ function startViz(){
     function draw(){
       vizRAF = requestAnimationFrame(draw);
       analyser.getByteFrequencyData(data);
-      updateLadder();        /* v51：顺便点亮左下 LED 电平柱 */
 
       // ===== 自动电平统一（响度匹配）：把各台输出 RMS 收敛到同一基准，解决"台间响度不一" =====
       if(autoLevelOn && levelGain && !audio.muted){
