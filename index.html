@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v58</title>
+<title>WATERS RADIO · v59</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1537,7 +1537,9 @@
     body{min-height:100vh;min-height:100dvh}
     .container{
       height:auto;min-height:100vh;min-height:100dvh;overflow:visible;
-      grid-template-rows:auto auto auto;   /* 三行：顶栏 / 播放面板 / 底栏 */
+      /* v59：底栏横屏隐藏 → 只留「顶栏 / 播放面板」两行 */
+      grid-template-rows:auto auto;
+      grid-template-areas:"nav" "left";
     }
     .now-playing{height:auto;max-height:none}
     /* 列表内部滚动：200px 是面板内边距 + 标题 + 分段栏的合计，约等于「一屏减导航」 */
@@ -1576,7 +1578,9 @@
          (orientation:landscape) and (max-height:620px) and (max-width:932px){
     .container{
       grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr);
-      grid-template-areas:"nav nav" "left side" "bar bar";
+      /* v59：底栏在横屏隐藏 → 栅格只留「顶栏 / 内容」两行，
+         否则第三行（0 高）仍会白吃一条 row-gap（实测 10px） */
+      grid-template-areas:"nav nav" "left side";
     }
     #radioModal{
       grid-area:side;position:static;inset:auto;z-index:1;
@@ -1596,6 +1600,18 @@
     .now-playing{max-width:520px}
   }
 
+  /* ========== v59：横屏隐藏底栏（把这一条高度还给主页面） ==========
+     横屏双栏下电台库已常驻右栏，切「收藏 / 预设 / 全球 / 定制」直接用右栏顶部的
+     分段栏（#tabbar）即可 —— 底栏那 4 个按钮是同一套入口的重复，横屏下隐藏：
+       · 竖屏：底栏保留（电台库是弹窗，必须靠底栏打开）；
+       · 横屏：整条底栏 display:none，第三行栅格塌陷为 0，省下的高度全部给内容行。
+     JS 不受影响：底栏按钮仍在 DOM 里，setupBottomBar 的绑定与 active 同步照常跑。 */
+  @media (orientation:landscape){
+    .bottom-bar{display:none}
+    /* 第三行（bar）已空：去掉它会多出一条 row-gap，直接把栅格收敛成两行 */
+    .container{grid-template-rows:auto minmax(0,1fr)}
+  }
+
   /* ── 手机横屏双栏微调（v57）：整页不滚，两列各自内部滚动 ──
      上面的双栏块只负责「停靠成两列」。手机横屏此前被两条单栏专属规则接管：
      ① `@media …max-height:620px`：整页滚动 + 播放面板内容高度 + 列表限高；
@@ -1611,7 +1627,7 @@
     .container{
       height:100vh;height:100dvh;overflow:hidden;
       padding:10px 14px 10px;row-gap:10px;
-      grid-template-rows:auto minmax(0,1fr) auto;
+      grid-template-rows:auto minmax(0,1fr);   /* v59：底栏隐藏，两行即可（省下第三行的间距） */
     }
     .nav-inner{padding:2px 2px 8px}
     /* 左列里播放器填满列宽；频谱带压扁、快捷台键压扁，尽量不触发左列滚动 */
