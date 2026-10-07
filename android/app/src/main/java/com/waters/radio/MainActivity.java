@@ -116,6 +116,24 @@ public class MainActivity extends Activity {
         return true;
     }
 
+    /* v58：自动关机时间到点 —— 页面若在前台就收掉它（真正的断电关机做不到，
+       这里做到「停止播放 + 退出界面」，配合 Service 停止即进入安静待机）。 */
+    static void finishIfRunning() {
+        if (instance == null) return;
+        try {
+            instance.mainHandler.post(() -> {
+                try { instance.moveTaskToBack(true); } catch (Throwable ignored) {}
+                try { instance.finish(); } catch (Throwable ignored) {}
+            });
+        } catch (Throwable ignored) {}
+    }
+
+    /* v58：给 JsBridge 用的应用级 Context（Service 创建时写入，避免持有 Activity） */
+    static android.content.Context appContext() {
+        if (instance != null) return instance.getApplicationContext();
+        return null;
+    }
+
     /* ------------------------------------------------------------
      * 通知栏媒体按钮的点击（PendingIntent → 本 Activity 特殊 Intent）
      * ---------------------------------------------------------- */
