@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v54</title>
+<title>WATERS RADIO · v55</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1402,16 +1402,19 @@
        台名列 label/台名/状态 上下均匀分布（状态行填住左下空带）；圆盘、时钟组垂直居中；
        时钟分隔线通高 —— 用户圈出的「左下空带」消失 */
     .screen-row{align-items:stretch;align-content:stretch}
-    .screen-info{justify-content:space-between;padding-bottom:32px}
+    .screen-info{justify-content:space-between;padding-bottom:48px}
     /* v54：ICY 两行块绝对定位贴行底（全宽），会与信息列最后一项（状态行）撞在同一底边带；
-       给信息列底部预留 32px 让状态行上移，腾出底边带给 ICY，互不重叠 */
+       v55：预留提高到 48px —— ICY 让位后宽度变窄，长歌名会折到第三行（约 43px），
+       48px 保证状态行与任意行数的 ICY 都不重叠 */
     .lcd-clock{align-self:stretch}
     /* v53：去掉 v51 的电平柱后，左列只剩圆盘——改为整行垂直居中，避免圆盘上方/下方出现空带 */
     .screen-left{align-self:center}
     /* v52：竖屏改用「ICY 两行块」显示曲目信息，跑马灯让位（横屏/桌面反过来）。
        v54：ICY 块定位到 .screen-row 内部底部（绝对定位，脱离文档流），
-            其底边 = 行底 = 右侧时间/日期板块底边 → 两者齐平；横屏/桌面仍隐藏。 */
-    .np-icy{position:absolute;left:0;right:0;bottom:0;width:auto;z-index:5}
+            其底边 = 行底 = 右侧时间/日期板块底边 → 两者齐平；横屏/桌面仍隐藏。
+       v55：窄屏竖屏时时钟会换行到行末（右下）与 ICY 同处底边带 ——
+            右边界用 --icy-inset 让位（JS 实测时钟宽度后写入；宽屏为 0，仍占满整行）。 */
+    .np-icy{position:absolute;left:0;right:var(--icy-inset,0px);bottom:0;width:auto;z-index:5}
     .np-icy.show{display:block}
     .np-marquee.show{display:none}
     .controls{gap:24px;margin:0}
@@ -3819,11 +3822,30 @@ function splitIcyTwoLines(text){
   var mid = Math.ceil(text.length / 2);
   return [text.slice(0, mid), text.slice(mid)];
 }
+/* v55：竖屏上 .lcd-clock（margin-left:auto，右对齐）与贴底的全宽 ICY 两行块共用底边带 ——
+   窄屏时它甚至换行到 .screen-row 末行，长歌名会直接压到日期/秒数上（用户截图实证）；
+   宽屏不换行时长歌名也会穿过时钟分隔线伸进其空白下半。
+   故竖屏一律把 ICY 的右边界收到时钟块左缘外 10px；横屏 / 桌面恒为 0（跑马灯占满，不受影响）。 */
+function layoutIcyInset(){
+  var row = document.querySelector('.screen-row');
+  var clock = document.querySelector('.lcd-clock');
+  if(!row || !clock) return;
+  var inset = '0px';
+  try{
+    if(window.matchMedia && window.matchMedia('(orientation: portrait)').matches){
+      var r = row.getBoundingClientRect(), c = clock.getBoundingClientRect();
+      inset = Math.ceil((r.right - c.left) + 10) + 'px';
+    }
+  }catch(e){}
+  row.style.setProperty('--icy-inset', inset);
+}
+
 function renderIcyLines(t){
   var box = document.getElementById('npIcy');
   var l1  = document.getElementById('npIcyL1');
   var l2  = document.getElementById('npIcyL2');
   if(!box || !l1 || !l2) return;
+  layoutIcyInset();             /* v55：先量时钟是否占据底边带，再决定 ICY 右边界 */
   var pair = splitIcyTwoLines(t);
   l1.textContent = pair[0] || '';
   l2.textContent = pair[1] || '';
@@ -4409,6 +4431,11 @@ function init(){
   }
 
   log('WATERS RADIO 就绪 · 多源热备份已启用');
+
+  // v55：竖屏 ICY 底边带让位 —— 初始量一次，转屏 / 改变窗口尺寸时重算
+  layoutIcyInset();
+  window.addEventListener('resize', layoutIcyInset);
+  window.addEventListener('orientationchange', layoutIcyInset);
 
   // 已取消强制交互与自动播放：界面加载完成后，由用户自行点击电台播放。
   // 点击动作本身就是浏览器认可的用户手势，playStation 内的 audio.play() 可正常出声。
