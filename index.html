@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v53</title>
+<title>WATERS RADIO · v54</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -521,7 +521,7 @@
   /* v50：LCD 内容行（圆盘｜台名｜时钟）。此前 .screen-main 自身是 wrap 多行容器，
      富余高度按 align-content 分不到内容行上，竖屏会堆出「左下空带」；
      现在由这一行单独 flex:1 吃掉 LCD 富余，跑马灯始终贴底 */
-  .screen-row{display:flex;flex-wrap:wrap;align-items:center;gap:18px;flex:1 1 auto;min-height:0}
+  .screen-row{display:flex;flex-wrap:wrap;align-items:center;gap:18px;flex:1 1 auto;min-height:0;position:relative}
 
   /* 左列：竖屏时只有圆盘（LED 唱片）。下方「左下空挡」由 v52 的 ICY 两行块占满屏宽填充。 */
   .screen-left{display:flex;flex-direction:column;align-items:center;gap:9px;flex-shrink:0}
@@ -560,8 +560,8 @@
   /* 时间：主字号 */
   .lcd-time{ font-size:43px;letter-spacing:.04em; }
   /* 日期：随主字号同比略小 */
-  /* v51：日期字号 23→27.6（×1.2）并加粗（DSEG7 仅内嵌 400 字重，700 由浏览器合成加粗） */
-  .lcd-date{ font-size:27.6px;letter-spacing:.10em;font-weight:700; }
+  /* v54：去掉 v51 的加粗，字号缩到原始基准的 0.8× —— 桌面 23×0.8=18.4、横屏 19.5×0.8=15.6、竖屏 14.3×0.8=11.44（DSEG7 仅 400 字重，不加粗） */
+  .lcd-date{ font-size:18.4px;letter-spacing:.10em;font-weight:400; }
   /* 秒数：更小一号，稍微抬起到上标位置 */
   .lcd-sec{
     font-size:14.5px;font-weight:400;
@@ -1322,7 +1322,7 @@
     .np-name{font-size:17px}
     .lcd-clock{gap:4px;padding-left:11px}      /* v51：间隔 ×2 */
     .lcd-time{font-size:35.9px}
-    .lcd-date{font-size:23.4px}                /* v51：19.5×1.2 */
+    .lcd-date{font-size:15.6px}                /* v54：19.5×0.8（原始基准的 0.8×，去掉 v51 的 ×1.2） */
     .lcd-sec{font-size:12px}
     .viz-wrap{height:32.4px;margin:5px 0 1px}
     canvas.viz{height:32.4px}
@@ -1396,17 +1396,22 @@
     /* v44：DSEG7 段码数字比旧衬线数字宽约 1.8 倍，竖屏时钟字号需收小，
        否则右栏时钟会把台名挤成一字宽（实测 31.2px 时台名仅剩 31px） */
     .lcd-time{font-size:24.7px}
-    .lcd-date{font-size:17.16px}               /* v51：14.3×1.2，并继承 .lcd-date 的 700 加粗 */
+    .lcd-date{font-size:11.44px}               /* v54：14.3×0.8（原始基准的 0.8×，去掉 v51 的 ×1.2 与加粗） */
     .lcd-sec{font-size:9px}
     /* v50：竖屏 LCD 富余高度由 .screen-row 吃掉（flex:1），三列拉伸到整屏高：
        台名列 label/台名/状态 上下均匀分布（状态行填住左下空带）；圆盘、时钟组垂直居中；
        时钟分隔线通高 —— 用户圈出的「左下空带」消失 */
     .screen-row{align-items:stretch;align-content:stretch}
-    .screen-info{justify-content:space-between}
+    .screen-info{justify-content:space-between;padding-bottom:32px}
+    /* v54：ICY 两行块绝对定位贴行底（全宽），会与信息列最后一项（状态行）撞在同一底边带；
+       给信息列底部预留 32px 让状态行上移，腾出底边带给 ICY，互不重叠 */
     .lcd-clock{align-self:stretch}
     /* v53：去掉 v51 的电平柱后，左列只剩圆盘——改为整行垂直居中，避免圆盘上方/下方出现空带 */
     .screen-left{align-self:center}
-    /* v52：竖屏改用「ICY 两行块」显示曲目信息，跑马灯让位（横屏/桌面反过来） */
+    /* v52：竖屏改用「ICY 两行块」显示曲目信息，跑马灯让位（横屏/桌面反过来）。
+       v54：ICY 块定位到 .screen-row 内部底部（绝对定位，脱离文档流），
+            其底边 = 行底 = 右侧时间/日期板块底边 → 两者齐平；横屏/桌面仍隐藏。 */
+    .np-icy{position:absolute;left:0;right:0;bottom:0;width:auto;z-index:5}
     .np-icy.show{display:block}
     .np-marquee.show{display:none}
     .controls{gap:24px;margin:0}
@@ -1564,10 +1569,12 @@
             <div class="lcd-time" id="lcdTime">--:--</div>
             <div class="lcd-date" id="lcdDate">--.--</div>
           </div>
+          <!-- v54：ICY 两行块移入 .screen-row 内部（绝对定位，脱离文档流），
+               竖屏时 bottom:0 贴住行底，与右侧时间/日期板块底部齐平；横屏/桌面仍 display:none -->
+          <div class="np-icy" id="npIcy"><div id="npIcyL1"></div><div id="npIcyL2"></div></div>
           </div><!-- /screen-row -->
           <!-- v52：竖屏专用——ICY 数据两行显示（演唱者 / 歌名，无分隔符时按单词或字数均分）。
                横屏与桌面仍沿用原来的滚动跑马灯（np-marquee），由 CSS 分派。 -->
-          <div class="np-icy" id="npIcy"><div id="npIcyL1"></div><div id="npIcyL2"></div></div>
           <div class="np-marquee" id="npMarquee" aria-hidden="true"><span class="np-marquee-track" id="npMarqueeTrack"></span></div>
         </div>
         <div class="viz-wrap"><canvas class="viz" id="viz" width="600" height="46.8"></canvas></div>
