@@ -42,6 +42,9 @@ public class RadioPlaybackService extends Service {
     private static final String CHANNEL_ID = "waters_radio_playback";
     private static final int NOTIF_ID = 2026;
 
+    /* v58：JsBridge / 闹钟排程用的应用级 Context（Service 创建时写入，不持有 Activity） */
+    private static volatile android.content.Context sAppContext = null;
+
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
     private MediaSession mediaSession;    /* API 21+ */
@@ -60,6 +63,7 @@ public class RadioPlaybackService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        sAppContext = getApplicationContext();
         createChannel();
         if (Build.VERSION.SDK_INT >= 21) setupMediaSession();
         acquireLocks();
@@ -397,6 +401,49 @@ public class RadioPlaybackService extends Service {
                     o.optString("url", ""),
                     o.optString("title", ""));
             } catch (Exception ignored) {}
+        }
+
+        /* ---- v58：定时与闹钟（网页 → 原生 AlarmManager）----
+           网页把整份 schedule JSON 交过来，由 AlarmScheduler 预约精确闹钟；
+           屏幕关掉 / WebView 被回收后也能准时唤起本程序。 */
+        @android.webkit.JavascriptInterface
+        public void setSchedule(String json) {
+            android.content.Context c = ctx();
+            if (c == null) return;
+            try {
+                AlarmScheduler.saveSchedule(c, json);
+                AlarmScheduler.scheduleAll(c);
+            } catch (Throwable ignored) {}
+        }
+
+        /* 网页启动时取走「原生闹钟留下的待触发项」（取完即清空） */
+        @android.webkit.JavascriptInterface
+        public String getPendingAlarm() {
+            android.content.Context c = ctx();
+            if (c == null) return "";
+            try { return AlarmScheduler.takePending(c); } catch (Throwable ignored) { return ""; }
+        }
+
+        /* 自动关机时间到点：停止播放服务 + 回到桌面（真正的断电需系统支持） */
+        @android.webkit.JavascriptInterface
+        public void standby() {
+            android.content.Context c = ctx();
+            if (c == null) return;
+            try { c.stopService(new android.content.Intent(c, RadioPlaybackService.class)); } catch (Throwable ignored) {}
+            try {
+                android.content.Intent home = new android.content.Intent(android.content.Intent.ACTION_MAIN);
+                home.addCategory(android.content.Intent.CATEGORY_HOME);
+                home.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                c.startActivity(home);
+            } catch (Throwable ignored) {}
+            try { MainActivity.finishIfRunning(); } catch (Throwable ignored) {}
+        }
+
+        /* JsBridge 是无 Context 的静态类：优先用 Service 自己，其次 MainActivity */
+        private static android.content.Context ctx() {
+            if (sAppContext != null) return sAppContext;
+            android.content.Context c = MainActivity.appContext();
+            return c;
         }
     }
 }
