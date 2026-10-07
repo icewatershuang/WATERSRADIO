@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v56</title>
+<title>WATERS RADIO · v57</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1504,14 +1504,16 @@
     .toast{bottom:calc(132px + env(safe-area-inset-bottom,0px))}
   }
 
-  /* ========== 宽屏横屏双栏（平板 / 桌面）：左播放器 / 右电台库 ==========
+  /* ========== 横屏双栏（平板 / 桌面 + 手机横屏）：左播放器 / 右电台库 ==========
      单栏居中在宽屏横屏下左右各空一大片；此档把电台库从「弹窗」停靠成
      「常驻右栏」，左右双栏填满版面（同一份 #tabbar + #panels DOM，只是
      不再 position:fixed 覆盖全屏，显示/隐藏仍由 hidden 属性控制——JS 在
      进入/离开本档时自动切换 hidden，CSS 不与 .radio-modal[hidden] 抢优先级）。
-     触发条件带 min-height:540px：手机横屏（高约 320~520px）高度不够，
-     仍走上面的「单栏 + 固定底栏」档。 */
-  @media (min-width:860px) and (orientation:landscape) and (min-height:540px){
+     v57：追加第二组条件 —— 手机横屏（≤932 宽、≤620 高）也走双栏。
+     手机横屏原本是「单栏整页滚动 + 固定底栏弹窗」，改为双栏后两列各自内部滚动，
+     整页不再滚动（后面的「手机双栏微调」块负责复位那些单栏专属的设定）。 */
+  @media (min-width:860px) and (orientation:landscape) and (min-height:540px),
+         (orientation:landscape) and (max-height:620px) and (max-width:932px){
     .container{
       grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr);
       grid-template-areas:"nav nav" "left side" "bar bar";
@@ -1532,6 +1534,67 @@
     .nav-inner{grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr)}
     .brand-inner{max-width:520px}
     .now-playing{max-width:520px}
+  }
+
+  /* ── 手机横屏双栏微调（v57）：整页不滚，两列各自内部滚动 ──
+     上面的双栏块只负责「停靠成两列」。手机横屏此前被两条单栏专属规则接管：
+     ① `@media …max-height:620px`：整页滚动 + 播放面板内容高度 + 列表限高；
+     ② `…and (max-width:932px)`：底栏 position:fixed + 容器底部留白 76px。
+     进双栏后这些都要复位，否则「滚动条 + 固定底栏 + 双栏」会互相打架：
+       · html/body 与 .container 回到满屏不滚，富余高度交给内容行 1fr；
+       · 底栏回到文档流（不再 fixed），容器不再留 76px，并把底栏压扁省高度；
+       · 左列 .lp-left 内部滚动；右列 section 解除 max-height，由 flex:1 撑满后内部滚。
+     新版提醒胶囊 / toast 的 bottom 复位到「底栏在文档流」时的基准值（16 / 80px）。 */
+  @media (orientation:landscape) and (max-height:620px) and (max-width:932px){
+    html,body{height:100%;height:100dvh;overflow:hidden}
+    body{min-height:0}
+    .container{
+      height:100vh;height:100dvh;overflow:hidden;
+      padding:10px 14px 10px;row-gap:10px;
+      grid-template-rows:auto minmax(0,1fr) auto;
+    }
+    .nav-inner{padding:2px 2px 8px}
+    /* 左列里播放器填满列宽；频谱带压扁、快捷台键压扁，尽量不触发左列滚动 */
+    /* ⚠️ 不能 align-items:center：左列内容(约500px)高于列高(约240px)时，居中会把溢出
+       对半分到上下两端，顶部（圆盘/台名/时钟行）变成负坐标永远滚不到（flex 经典坑）。
+       顶对齐 + 列内部滚动，内容完整可达 */
+    .lp-left{min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;align-items:flex-start}
+    .now-playing{width:100%;max-width:none;padding:10px 12px;gap:8px}
+    /* 播放键整体压扁，尽量减少左列滚动量 */
+    .controls{gap:16px;margin:0}
+    .ctrl-btn{width:52px;height:52px}
+    .ctrl-btn svg{width:22px;height:22px}
+    .play-btn{width:72px;height:72px}
+    .play-btn svg{width:30px;height:30px}
+    /* 屏幕内容行不许缩成 0：矮屏下 flex:1 1 auto 会把圆盘/台名/时钟整行压没（实测 844x390），
+       改为内容高度，左列超出部分靠内部滚动 */
+    .screen-row{flex:0 0 auto}
+    .viz-wrap{flex:0 0 46px;min-height:24px}
+    .quick-favs .featured-chip{height:42px;font-size:11.5px;border-radius:12px}
+    .bottom-bar{
+      position:static;left:auto;right:auto;bottom:auto;z-index:auto;
+      padding:4px 4px 2px;background:none;box-shadow:none;
+    }
+    .bb-btn{padding:7px 4px 6px}
+    .bb-glyph{font-size:19px}
+    .bb-svg{width:19px;height:19px}
+    .bb-label{font-size:10.5px}
+    .newver{bottom:16px}
+    .newver{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+    .toast{bottom:80px}
+    .toast{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+    #radioModal .modal-card{padding:12px 12px 10px;border-radius:16px}
+    #radioModal .modal-head{padding:0 4px 8px}
+    #radioModal .modal-card .segmented{margin:0 0 10px}
+    #radioModal .segmented .tab{padding:8px 0;font-size:12.5px}
+    #radioModal .panels .section{max-height:none}
+  }
+
+  /* ── 窄手机横屏（≤700px 宽）双栏：左列更窄，台名列保底 120px，
+     时钟放不下就在 .screen-row 内换行到下一行右侧（与竖屏 ≤359 的规则同理），
+     避免台名被挤成一字一行竖排（实测 667x375）── */
+  @media (orientation:landscape) and (max-height:620px) and (max-width:700px){
+    .screen-info{min-width:120px}
   }
 </style>
 
@@ -4605,9 +4668,10 @@ document.addEventListener('DOMContentLoaded', init);
     var mask = document.getElementById('modalMask');
     var closeBtn = document.getElementById('modalClose');
 
-    /* ---- 宽屏横屏双栏（平板/桌面）----
-       把电台库弹窗 DOM 移入 .container 成为栅格子项，由 CSS
-       （@media min-width:860px + landscape + min-height:540px）停靠为右栏；
+    /* ---- 横屏双栏（平板/桌面 + v57 手机横屏）----
+       把电台库弹窗 DOM 移入 .container 成为栅格子项，由 CSS 停靠为右栏：
+         · 宽屏：@media (min-width:860px) landscape (min-height:540px)
+         · 手机横屏：(orientation:landscape) (max-height:620px) (max-width:932px)
        单栏态它仍是 position:fixed 的全屏弹窗（fixed 元素不参与栅格布局，
        移入后对原弹窗表现零影响）。显示/隐藏统一由 hidden 属性控制。 */
     try{
@@ -4615,8 +4679,10 @@ document.addEventListener('DOMContentLoaded', init);
       if(containerEl && radioModalEl.parentElement !== containerEl) containerEl.appendChild(radioModalEl);
     }catch(e){}
 
+    var SPLIT_QUERY = '(min-width:860px) and (orientation:landscape) and (min-height:540px)'
+      + ', (orientation:landscape) and (max-height:620px) and (max-width:932px)';
     var splitMQ = (window.matchMedia
-      ? window.matchMedia('(min-width:860px) and (orientation:landscape) and (min-height:540px)')
+      ? window.matchMedia(SPLIT_QUERY)
       : {matches:false});
     function isSplit(){ return !!(splitMQ && splitMQ.matches); }
     var splitState = null;
