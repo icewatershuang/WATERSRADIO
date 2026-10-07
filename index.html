@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v55</title>
+<title>WATERS RADIO · v56</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1402,7 +1402,11 @@
        台名列 label/台名/状态 上下均匀分布（状态行填住左下空带）；圆盘、时钟组垂直居中；
        时钟分隔线通高 —— 用户圈出的「左下空带」消失 */
     .screen-row{align-items:stretch;align-content:stretch}
-    .screen-info{justify-content:space-between;padding-bottom:48px}
+    /* v56：信息组（label/台名/状态）改为整组垂直居中 —— 与圆盘圆心同一水平线（用户要求）。
+       圆盘 .screen-left 是 align-self:center（圆心=所在行中线），信息组加对称 padding 后
+       justify-content:center，其组中心=行中线=圆心。上 48px 与下 48px 对称，
+       下 48px 仍是 v55 给 ICY 底边带预留的量，语义不变 */
+    .screen-info{justify-content:center;padding-top:48px;padding-bottom:48px}
     /* v54：ICY 两行块绝对定位贴行底（全宽），会与信息列最后一项（状态行）撞在同一底边带；
        v55：预留提高到 48px —— ICY 让位后宽度变窄，长歌名会折到第三行（约 43px），
        48px 保证状态行与任意行数的 ICY 都不重叠 */
