@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v49</title>
+<title>WATERS RADIO · v50</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -504,7 +504,7 @@
   }
   /* 屏面：内嵌凹槽 */
   .screen-main{
-    display:flex;flex-wrap:wrap;align-items:center;gap:18px;
+    display:flex;flex-direction:column;gap:18px;
     padding:14px 17px 12px;border-radius:14px;   /* v43: 15/13→14/12，抵消刊头高度 */
     background:linear-gradient(170deg,#3a2c1e,var(--lcd-bg) 45%,#241b12);
     box-shadow:0 0 0 1px rgba(90,70,45,.7),0 3px 7px rgba(70,55,35,.55) inset;
@@ -514,6 +514,10 @@
     content:'';position:absolute;inset:0;pointer-events:none;
     background:linear-gradient(118deg,rgba(255,255,255,.15) 0%,transparent 44%);
   }
+  /* v50：LCD 内容行（圆盘｜台名｜时钟）。此前 .screen-main 自身是 wrap 多行容器，
+     富余高度按 align-content 分不到内容行上，竖屏会堆出「左下空带」；
+     现在由这一行单独 flex:1 吃掉 LCD 富余，跑马灯始终贴底 */
+  .screen-row{display:flex;flex-wrap:wrap;align-items:center;gap:18px;flex:1 1 auto;min-height:0}
 
   /* ===== 屏内电子表时钟：纯 CSS 七段码数码管 ===== */
   .lcd-clock{
@@ -547,7 +551,7 @@
   }
   /* 同步文字（ICY / 流内元数据）滚动字幕：APK 推来实时曲目时才显示 */
   .np-marquee{
-    display:none;width:100%;flex:0 0 100%;
+    display:none;width:100%;flex:0 0 auto;
     overflow:hidden;white-space:nowrap;
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);
     mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);
@@ -1374,6 +1378,13 @@
     .lcd-time{font-size:24.7px}
     .lcd-date{font-size:14.3px}
     .lcd-sec{font-size:9px}
+    /* v50：竖屏 LCD 富余高度由 .screen-row 吃掉（flex:1），三列拉伸到整屏高：
+       台名列 label/台名/状态 上下均匀分布（状态行填住左下空带）；圆盘、时钟组垂直居中；
+       时钟分隔线通高 —— 用户圈出的「左下空带」消失 */
+    .screen-row{align-items:stretch;align-content:stretch}
+    .screen-info{justify-content:space-between}
+    .lcd-clock{align-self:stretch}
+    .artwork{align-self:center}
     .controls{gap:24px;margin:0}
     .ctrl-btn{width:64px;height:64px}
     .ctrl-btn svg{width:28px;height:28px}
@@ -1513,6 +1524,7 @@
       <!-- 液晶屏：唱片 + 台名 + 状态 + 频谱（一体成型） -->
       <div class="screen">
         <div class="screen-main">
+          <div class="screen-row">
           <div class="artwork" id="artwork">W</div>
           <div class="screen-info">
             <div class="np-label" id="npLabel">STANDBY</div>
@@ -1526,6 +1538,7 @@
             <div class="lcd-time" id="lcdTime">--:--</div>
             <div class="lcd-date" id="lcdDate">--.--</div>
           </div>
+          </div><!-- /screen-row -->
           <div class="np-marquee" id="npMarquee" aria-hidden="true"><span class="np-marquee-track" id="npMarqueeTrack"></span></div>
         </div>
         <div class="viz-wrap"><canvas class="viz" id="viz" width="600" height="46.8"></canvas></div>
