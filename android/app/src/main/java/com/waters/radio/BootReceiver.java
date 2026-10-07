@@ -32,6 +32,9 @@ public class BootReceiver extends BroadcastReceiver {
             return;
         }
 
+        // 0) 重新排程闹钟 / 自动开关机（AlarmManager 的一次性闹钟重启后全部失效，必须重排）
+        try { AlarmScheduler.scheduleAll(context); } catch (Throwable ignored) {}
+
         // 1) 先拉起前台服务（保活 + WakeLock + MediaSession）
         Intent svc = new Intent(context, RadioPlaybackService.class);
         svc.putExtra("autostart", true);
