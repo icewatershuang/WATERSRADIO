@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v57</title>
+<title>WATERS RADIO · v58</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1271,6 +1271,66 @@
   .switch input:checked + .switch-track{ background:var(--amber); }
   .switch input:checked + .switch-track::before{ transform:translateX(20px); }
 
+  /* ========== v58：定时与闹钟 ========== */
+  .sched-hint{display:block;font-size:11px;color:var(--ink-3);font-weight:400;margin-top:3px;line-height:1.45}
+  .alarm-list{display:flex;flex-direction:column;gap:10px}
+  .alarm-empty{font-size:12.5px;color:var(--ink-3);padding:2px}
+  .alarm-row{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    padding:10px 12px;border-radius:12px;
+    background:linear-gradient(168deg,#fffdf7,var(--cream-1));
+    box-shadow:0 1px 0 rgba(255,255,255,.9) inset,
+      0 0 0 1px rgba(216,207,187,.75),0 3px 7px -3px rgba(150,133,102,.34);
+  }
+  .alarm-row.off{opacity:.55}
+  .alarm-days{display:flex;gap:4px;flex:0 0 auto}
+  .day-chip{
+    min-width:27px;height:27px;padding:0 4px;border-radius:8px;border:none;cursor:pointer;
+    font-size:11.5px;font-weight:600;color:var(--ink-3);
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 0 0 1px rgba(216,207,187,.8);
+  }
+  .day-chip.on{
+    color:#3a3128;
+    background:linear-gradient(168deg,#fff4dd,#f6e4bd);
+    box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 0 0 1px rgba(214,193,150,.9);
+  }
+  .alarm-del{
+    min-width:34px;height:30px;padding:0 10px;border-radius:9px;border:none;cursor:pointer;
+    font-size:12.5px;font-weight:600;color:var(--red);
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 0 0 1px rgba(216,207,187,.8);
+  }
+  .alarm-actions{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+  /* 覆盖 .ios-input/.ios-select 的默认 flex:1，让定时控件保持紧凑宽度 */
+  .sched-select{flex:0 0 auto;min-width:118px;width:auto}
+  .sched-num{flex:0 0 auto;min-width:0;width:112px;padding:12px 12px}
+  .sched-time{flex:0 0 auto;min-width:0;width:106px;padding:12px 10px}
+  .alarm-bar{
+    position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:420;
+    display:inline-flex;align-items:center;gap:12px;
+    padding:12px 18px;border-radius:999px;white-space:nowrap;max-width:92vw;
+    font-size:13.5px;font-weight:600;color:#3a3128;
+    background:linear-gradient(168deg,#fff4dd,#f6e4bd);
+    box-shadow:0 0 0 1px rgba(214,193,150,.9),0 10px 24px -12px rgba(0,0,0,.45);
+  }
+  /* ⚠️ 必须显式写：作者样式的 display:inline-flex 会盖掉 [hidden] 自带的 display:none */
+  .alarm-bar[hidden]{display:none}
+  .alarm-bar .mini-btn{
+    min-height:32px;padding:0 14px;border-radius:10px;cursor:pointer;
+    font-size:12.5px;font-weight:600;color:var(--ink);
+    background:linear-gradient(168deg,var(--key-top),var(--key-bot));
+    box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 0 0 1px rgba(216,207,187,.85);
+  }
+  .np-timer{font-size:11px;color:var(--lcd-dim);letter-spacing:.06em;margin-top:3px}
+  .np-timer[hidden]{display:none}
+  .standby-veil{
+    position:fixed;inset:0;z-index:600;background:#0b0b0c;
+    display:flex;align-items:center;justify-content:center;
+    color:#6a6a6a;font-size:13px;letter-spacing:.16em;
+  }
+  .standby-veil[hidden]{display:none}
+
   /* ========== 版权页 / 关于 ========== */
   .about-panel{padding:6px 20px 20px;display:flex;flex-direction:column;gap:18px}
   .about-logo{
@@ -1632,6 +1692,8 @@
             <h1 class="np-name" id="nowName">未播放</h1>
             <p class="np-meta" id="nowMeta">从底部电台库选择一个电台开始收听</p>
             <div class="np-status" id="status"><span class="dot"></span><span id="statusText">空闲</span></div>
+            <!-- v58：播放时长倒计时（设置了「播放时长」时才显示） -->
+            <div class="np-timer" id="npTimer" hidden></div>
             <div class="np-url" id="nowUrl"></div>
           </div>
           <!-- 常显时钟：早期电子表风格（荧光绿数码字） -->
@@ -1801,6 +1863,15 @@
 </div>
 
 <!-- ===== 设置后台模态弹窗 ===== -->
+<!-- ===== v58：闹钟响铃条（到点响铃时出现，可停止 / 稍后再响） ===== -->
+<div class="alarm-bar" id="alarmBar" hidden>
+  <span id="alarmBarText">闹钟</span>
+  <span class="mini-btn" id="alarmSnooze">稍后 5 分钟</span>
+  <span class="mini-btn" id="alarmStop">停止</span>
+</div>
+<!-- ===== v58：到点待机遮罩（自动关闭设备时间到点后盖住屏幕，点一下退出） ===== -->
+<div class="standby-veil" id="standbyVeil" hidden>已到自动关闭时间 · 点击继续</div>
+
 <div class="modal-overlay" id="settingsOverlay"></div>
 <aside class="settings-modal" id="settingsModal">
   <div class="settings-modal-header">
@@ -1836,6 +1907,55 @@
           <button class="eq-chip" data-eq="clear" type="button">清晰</button>
           <button class="eq-chip" data-eq="bass" type="button">重低音</button>
         </div>
+      </div>
+
+      <!-- ===== v58：定时与闹钟 ===== -->
+      <div class="setting-item setting-theme-block">
+        <span class="setting-label">闹钟<small class="sched-hint">可设置多个；到点用所选收藏电台响铃，音量与前台音量设置一致</small></span>
+        <div class="alarm-list" id="alarmList"></div>
+        <div class="alarm-actions">
+          <span class="setting-btn" id="addAlarm">＋ 添加闹钟</span>
+          <span class="sched-hint" id="alarmState">—</span>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-label">播放时长<small class="sched-hint">开始播放后到点自动停止（1 分钟起，可设不限时长）</small></span>
+        <span class="setting-btns">
+          <select class="ios-select sched-select" id="sleepSel">
+            <option value="0">不限时长</option>
+            <option value="1">1 分钟</option>
+            <option value="3">3 分钟</option>
+            <option value="5">5 分钟</option>
+            <option value="10">10 分钟</option>
+            <option value="15">15 分钟</option>
+            <option value="20">20 分钟</option>
+            <option value="30">30 分钟</option>
+            <option value="45">45 分钟</option>
+            <option value="60">60 分钟</option>
+            <option value="90">90 分钟</option>
+            <option value="120">120 分钟</option>
+            <option value="180">180 分钟</option>
+            <option value="custom">自定义…</option>
+          </select>
+          <input class="ios-input sched-num" type="number" id="sleepCustom" min="1" max="1440" step="1" placeholder="自定义分钟" />
+        </span>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-label">自动打开设备<small class="sched-hint">到点唤醒设备、打开本程序并开始播放；设备完全断电时需系统支持定时开机</small></span>
+        <span class="setting-btns">
+          <input class="ios-input sched-time" type="time" id="powerOnTime" value="07:00" />
+          <label class="switch"><input type="checkbox" id="powerOnSw" /><span class="switch-track"></span></label>
+        </span>
+      </div>
+
+      <div class="setting-item">
+        <span class="setting-label">自动关闭设备<small class="sched-hint">到点停止播放并进入待机；真正的断电关机需系统支持</small></span>
+        <span class="setting-btns">
+          <input class="ios-input sched-time" type="time" id="powerOffTime" value="23:00" />
+          <label class="switch"><input type="checkbox" id="powerOffSw" /><span class="switch-track"></span></label>
+        </span>
       </div>
 
       <div class="setting-item">
@@ -5154,6 +5274,532 @@ document.addEventListener('DOMContentLoaded', init);
     }, 1000 - (Date.now() % 1000));
   }
 
+  /* ============================================================
+   * v58：定时与闹钟（闹钟 / 播放时长 / 自动开机关机）
+   * ------------------------------------------------------------
+   * 数据全部存 localStorage（键 waters_radio.sched.v1）：
+   *   alarms   : [{id, h, m, days:[0..6], on, url, name}]   days 空数组 = 每天
+   *   sleepMin : 0 = 不限时长，否则 1~1440 分钟后自动停止播放
+   *   powerOn  : {h, m, on}   到点唤醒设备 / 打开本程序并开始播放
+   *   powerOff : {h, m, on}   到点停止播放并进入待机
+   * 铃声用「收藏电台」，音量直接沿用前台音量设置 masterVol（同一条音频链），
+   * 所以「铃声音量 = 前台音量设置」是天然成立的，响铃时再显式 setVolume 一次兜底。
+   * APK 内还会把同一份 schedule 交给原生 AlarmManager（见 pushScheduleNative），
+   * 屏幕关掉 / WebView 被回收时也能准时唤起。
+   * ============================================================ */
+  var SCHED_KEY = 'waters_radio.sched.v1';
+  var DAY_CN = ['日','一','二','三','四','五','六'];
+  var sched = null;
+
+  function defaultSched(){
+    return { alarms: [], sleepMin: 0, sleepCustom: 0,
+             powerOn: {h:7, m:0, on:false}, powerOff: {h:23, m:0, on:false} };
+  }
+  function loadSched(){
+    var s = null;
+    try{ s = JSON.parse(localStorage.getItem(SCHED_KEY) || 'null'); }catch(e){ s = null; }
+    if(!s || typeof s !== 'object') s = defaultSched();
+    if(!Array.isArray(s.alarms)) s.alarms = [];
+    if(typeof s.sleepMin !== 'number') s.sleepMin = 0;
+    if(!s.powerOn) s.powerOn = {h:7, m:0, on:false};
+    if(!s.powerOff) s.powerOff = {h:23, m:0, on:false};
+    sched = s;
+    return s;
+  }
+  function saveSched(){
+    try{ localStorage.setItem(SCHED_KEY, JSON.stringify(sched)); }catch(e){}
+    pushScheduleNative();
+    renderAlarmState();
+  }
+  function schedLog(msg){ try{ if(typeof log === 'function') log('[定时] ' + msg); }catch(e){} }
+
+  /* ---- 原生桥：把 schedule 交给 APK 的 AlarmManager（浏览器里静默降级） ---- */
+  function schedPayload(){
+    var out = { alarms: [], powerOn: sched.powerOn, powerOff: sched.powerOff, volume: curVol() };
+    for(var i=0;i<sched.alarms.length;i++){
+      var a = sched.alarms[i];
+      if(!a.on) continue;
+      out.alarms.push({ id:a.id, h:a.h, m:a.m, days:a.days || [], url:a.url||'', name:a.name||'' });
+    }
+    return out;
+  }
+  function pushScheduleNative(){
+    try{
+      if(window.WatersNative && typeof window.WatersNative.setSchedule === 'function'){
+        window.WatersNative.setSchedule(JSON.stringify(schedPayload()));
+      }
+    }catch(e){}
+  }
+  /* 启动时消费「原生闹钟把本程序唤起」时留下的待触发项 */
+  function consumePendingAlarm(){
+    try{
+      if(!(window.WatersNative && typeof window.WatersNative.getPendingAlarm === 'function')) return;
+      var raw = window.WatersNative.getPendingAlarm();
+      if(!raw) return;
+      var p = JSON.parse(raw);
+      if(!p) return;
+      if(p.action === 'poweroff'){ ringPowerOff(true); return; }
+      if(p.action === 'poweron'){ ringPowerOn(true); return; }
+      ringAlarm({ name: p.name || '', url: p.url || '' }, true);
+    }catch(e){}
+  }
+
+  /* ---- 时间工具 ----（pad2 复用本文件上方的同名函数，不重复声明） */
+  function ymd(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+  function hhmm(d){ return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  function daysHit(days, now){
+    if(!days || !days.length) return true;          // 空 = 每天
+    return days.indexOf(now.getDay()) >= 0;
+  }
+  function timeText(a){ return pad2(a.h) + ':' + pad2(a.m); }
+  function daysText(days){
+    if(!days || !days.length) return '每天';
+    var arr = days.slice().sort();
+    if(arr.length === 7) return '每天';
+    if(arr.length === 5 && arr.indexOf(0) < 0 && arr.indexOf(6) < 0) return '工作日';
+    if(arr.length === 2 && arr.indexOf(0) >= 0 && arr.indexOf(6) >= 0) return '周末';
+    var s = '';
+    for(var i=0;i<arr.length;i++){ s += (s?' ':'') + '周' + DAY_CN[arr[i]]; }
+    return s;
+  }
+
+  /* ---- 收藏电台（铃声候选） ----
+     ⚠️ 本段处在「第二个 <script>」的 IIFE 里，第一个 script 里的 state / LS / masterVol
+     都是私有变量，这里拿不到（实测 typeof 均为 undefined）。
+     所以收藏、上次播放、音量、静音一律**直接读 localStorage**（键与 LS 常量一致），
+     播放走全局的 playStation（window.playStation 可见）。 */
+  var LS_FAV='waters_radio.fav.v3', LS_LAST='waters_radio.last.v2',
+      LS_VOL='waters_radio.vol.v1', LS_MUTE='waters_radio.mute.v1';
+  function favStations(){
+    var f = [];
+    try{ f = JSON.parse(localStorage.getItem(LS_FAV) || '[]') || []; }catch(e){ f = []; }
+    var out = [];
+    for(var i=0;i<f.length;i++){
+      if(!f[i]) continue;
+      out.push({ name: f[i].name || '', url: f[i].url || (f[i].sources && f[i].sources[0]) || '', sources: f[i].sources || [] });
+    }
+    return out;
+  }
+  function lastStation(){
+    try{ return JSON.parse(localStorage.getItem(LS_LAST) || 'null'); }catch(e){ return null; }
+  }
+  function curVol(){
+    var v = parseFloat(localStorage.getItem(LS_VOL));
+    return isNaN(v) ? 0.8 : Math.max(0, Math.min(1, v));
+  }
+  function curMuted(){ return localStorage.getItem(LS_MUTE) === 'true'; }
+  /* 起播：优先用第一个 script 暴露在 window 上的 playStation */
+  function playStationSafe(st){
+    try{
+      if(typeof playStation === 'function' && st && st.url){
+        playStation({ name: st.name || '', url: st.url, sources: st.sources || [st.url] });
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  /* ---- 闹钟列表渲染 ---- */
+  function renderAlarms(){
+    var box = document.getElementById('alarmList');
+    if(!box || !sched) return;
+    box.innerHTML = '';
+    if(!sched.alarms.length){
+      var empty = document.createElement('div');
+      empty.className = 'alarm-empty';
+      empty.textContent = '还没有闹钟 —— 点下方「添加闹钟」，可用收藏的电台作铃声。';
+      box.appendChild(empty);
+      renderAlarmState();
+      return;
+    }
+    var favs = favStations();
+    sched.alarms.forEach(function(a){
+      var row = document.createElement('div');
+      row.className = 'alarm-row' + (a.on ? '' : ' off');
+
+      // ① 时间
+      var t = document.createElement('input');
+      t.type = 'time'; t.className = 'ios-input sched-time'; t.value = timeText(a);
+      t.onchange = function(){
+        var v = (t.value || '07:00').split(':');
+        a.h = parseInt(v[0],10) || 0; a.m = parseInt(v[1],10) || 0; saveSched();
+      };
+      row.appendChild(t);
+
+      // ② 星期
+      var days = document.createElement('div');
+      days.className = 'alarm-days';
+      for(var d=0; d<7; d++){
+        (function(day){
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'day-chip'; b.textContent = DAY_CN[day];
+          b.classList.toggle('on', (a.days||[]).indexOf(day) >= 0 && (a.days||[]).length > 0);
+          b.onclick = function(){
+            if(!Array.isArray(a.days)) a.days = [];
+            var i = a.days.indexOf(day);
+            if(i >= 0) a.days.splice(i,1); else a.days.push(day);
+            saveSched(); renderAlarms();
+          };
+          days.appendChild(b);
+        })(d);
+      }
+      row.appendChild(days);
+
+      // ③ 铃声电台（收藏）+ 当前电台兜底
+      var sel = document.createElement('select');
+      sel.className = 'ios-select sched-select alarm-station';
+      var cur = lastStation();
+      var opts = [{name:'（不换台，仅开始播放）', url:''}];
+      if(cur && cur.url){
+        var dup = false;
+        for(var i=0;i<favs.length;i++){ if(favs[i].url === cur.url){ dup = true; break; } }
+        if(!dup) opts.push({ name:'当前电台：' + (cur.name||''), url: cur.url });
+      }
+      opts = opts.concat(favs);
+      if(a.url){
+        var known = false;
+        for(var j=0;j<opts.length;j++){ if(opts[j].url === a.url){ known = true; break; } }
+        if(!known) opts.push({ name: a.name || '（已失效）', url: a.url });
+      }
+      opts.forEach(function(o){
+        var op = document.createElement('option');
+        op.value = o.url; op.textContent = o.name || o.url || '—';
+        if(o.url === a.url) op.selected = true;
+        sel.appendChild(op);
+      });
+      sel.onchange = function(){
+        a.url = sel.value;
+        a.name = sel.options[sel.selectedIndex].textContent || '';
+        saveSched();
+      };
+      row.appendChild(sel);
+
+      // ④ 启用开关
+      var lab = document.createElement('label');
+      lab.className = 'switch';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = !!a.on;
+      cb.onchange = function(){ a.on = cb.checked; saveSched(); renderAlarms(); };
+      var tr = document.createElement('span'); tr.className = 'switch-track';
+      lab.appendChild(cb); lab.appendChild(tr);
+      row.appendChild(lab);
+
+      // ⑤ 删除
+      var del = document.createElement('button');
+      del.type = 'button'; del.className = 'alarm-del'; del.textContent = '删除'; del.title = '删除这个闹钟';
+      del.onclick = function(){
+        var i = sched.alarms.indexOf(a);
+        if(i >= 0) sched.alarms.splice(i,1);
+        saveSched(); renderAlarms();
+        toast('已删除闹钟');
+      };
+      row.appendChild(del);
+
+      box.appendChild(row);
+    });
+    renderAlarmState();
+  }
+
+  function renderAlarmState(){
+    var el = document.getElementById('alarmState');
+    if(!el || !sched) return;
+    var on = sched.alarms.filter(function(a){ return a.on; });
+    if(!on.length){ el.textContent = '未启用闹钟'; return; }
+    var next = nextAlarmText();
+    el.textContent = on.length + ' 个闹钟已启用' + (next ? ' · 下次 ' + next : '');
+  }
+  function nextAlarmText(){
+    var now = new Date();
+    var best = null, bestDays = null;
+    for(var i=0;i<sched.alarms.length;i++){
+      var a = sched.alarms[i];
+      if(!a.on) continue;
+      for(var k=0;k<8;k++){
+        var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + k);
+        if(!daysHit(a.days, d)) continue;
+        var t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), a.h, a.m, 0, 0);
+        if(t.getTime() <= now.getTime()) continue;
+        if(!best || t.getTime() < best.getTime()){ best = t; bestDays = a.days || []; }
+        break;
+      }
+    }
+    if(!best) return '';
+    var diff = Math.round((best.getTime() - now.getTime())/60000);
+    if(diff < 60) return timeText(best) + '（' + diff + ' 分钟后）';
+    /* 明天的闹钟加上「明天」前缀，避免和今天同一时刻混淆 */
+    var sameDay = best.getDate() === now.getDate();
+    return (sameDay ? '' : '明天 ') + daysText(bestDays) + ' ' + timeText(best);
+  }
+
+  /* ---- 响铃 / 停止 ---- */
+  var ringing = null;      // 正在响的闹钟
+  var snoozeAt = 0;        // 稍后再响的时间戳
+
+  function showAlarmBar(text){
+    var bar = document.getElementById('alarmBar');
+    var tx = document.getElementById('alarmBarText');
+    if(!bar) return;
+    if(tx) tx.textContent = text;
+    bar.hidden = false;
+  }
+  function hideAlarmBar(){
+    var bar = document.getElementById('alarmBar');
+    if(bar) bar.hidden = true;
+    ringing = null; snoozeAt = 0;
+  }
+
+  function ringAlarm(a, fromNative){
+    /* 铃声音量 = 前台音量设置：直接沿用 localStorage 里的主音量（同一条音频链） */
+    try{ if(typeof setVolume === 'function') setVolume(curVol()); }catch(e){}
+    try{
+      var el = getAudio();
+      if(el && !curMuted()) el.muted = false;    // 用户本身没静音时，响铃必须出声
+    }catch(e){}
+    if(a && a.url){
+      playStationSafe(a);
+    }else{
+      var el2 = getAudio();
+      if(el2 && el2.paused){ el2.play().catch(function(){}); }
+    }
+    ringing = a || { name:'', url:'' };
+    showAlarmBar('⏰ 闹钟 · ' + ((a && a.name) ? a.name : '收音机已开始播放'));
+    toast('闹钟响了' + ((a && a.name) ? '：' + a.name : ''));
+    schedLog('闹钟触发' + ((a && a.name) ? '：' + a.name : '') + (fromNative ? '（原生唤起）' : ''));
+  }
+
+  function ringPowerOn(fromNative){
+    var el = getAudio();
+    if(!(el && !el.paused)){
+      var last = lastStation();
+      if(last && last.url) playStationSafe(last);
+      else if(el) el.play().catch(function(){});
+    }
+    toast('已到自动打开时间' + (fromNative ? '（原生唤起）' : ''));
+    schedLog('自动打开时间到点，已开始播放');
+  }
+
+  function ringPowerOff(fromNative){
+    try{
+      var el = getAudio();
+      if(el && !el.paused) el.pause();
+    }catch(e){}
+    hideAlarmBar();
+    /* 原生层：停止前台服务 + 回到桌面（真正的断电关机需系统支持） */
+    try{
+      if(window.WatersNative && typeof window.WatersNative.standby === 'function') window.WatersNative.standby();
+    }catch(e){}
+    var veil = document.getElementById('standbyVeil');
+    if(veil){
+      veil.hidden = false;
+      veil.onclick = function(){ veil.hidden = true; };
+    }
+    toast('已到自动关闭时间，播放已停止' + (fromNative ? '（原生唤起）' : ''));
+    schedLog('自动关闭时间到点，已停止播放并待机');
+  }
+
+  /* ---- 播放时长（睡眠定时） ---- */
+  var sleepDeadline = 0;     // 0 = 未计时
+  var sleepRemain = 0;       // 暂停时保留的剩余毫秒
+
+  function fmtLeft(ms){
+    var s = Math.max(0, Math.round(ms/1000));
+    var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
+    return h > 0 ? (h + ':' + pad2(m) + ':' + pad2(ss)) : (pad2(m) + ':' + pad2(ss));
+  }
+  function updateTimerBadge(){
+    var el = document.getElementById('npTimer');
+    if(!el) return;
+    if(sleepDeadline){
+      el.hidden = false;
+      el.textContent = '⏳ 剩余 ' + fmtLeft(sleepDeadline - Date.now());
+    }else if(sleepRemain > 0){
+      el.hidden = false;
+      el.textContent = '⏸ 剩余 ' + fmtLeft(sleepRemain);
+    }else{
+      el.hidden = true;
+      el.textContent = '';
+    }
+  }
+  function startSleepTimer(){
+    if(!sched || !sched.sleepMin || sched.sleepMin <= 0){ sleepDeadline = 0; sleepRemain = 0; updateTimerBadge(); return; }
+    sleepDeadline = Date.now() + (sleepRemain > 0 ? sleepRemain : sched.sleepMin * 60000);
+    sleepRemain = 0;
+    updateTimerBadge();
+  }
+  function pauseSleepTimer(){
+    if(sleepDeadline){ sleepRemain = Math.max(0, sleepDeadline - Date.now()); sleepDeadline = 0; }
+    updateTimerBadge();
+  }
+  function resetSleepTimer(){ sleepDeadline = 0; sleepRemain = 0; updateTimerBadge(); }
+  function checkSleepTimer(){
+    if(sleepDeadline && Date.now() >= sleepDeadline){
+      sleepDeadline = 0; sleepRemain = 0;
+      try{
+        var el = getAudio();
+        if(el && !el.paused) el.pause();
+      }catch(e){}
+      updateTimerBadge();
+      toast('已到设定的播放时长，播放已停止');
+      schedLog('播放时长到点（' + sched.sleepMin + ' 分钟），已停止');
+    }
+  }
+
+  /* ---- 分钟级调度循环 ---- */
+  var lastMinuteKey = '';
+  var firedKeys = {};
+  function tickScheduler(){
+    if(!sched) return;
+    var now = new Date();
+    var key = ymd(now) + ' ' + hhmm(now);
+    if(key === lastMinuteKey){ checkSleepTimer(); return; }
+    lastMinuteKey = key;
+
+    /* 闹钟 */
+    for(var i=0;i<sched.alarms.length;i++){
+      var a = sched.alarms[i];
+      if(!a.on) continue;
+      if(a.h !== now.getHours() || a.m !== now.getMinutes()) continue;
+      if(!daysHit(a.days, now)) continue;
+      var fk = 'a' + a.id + '|' + key;
+      if(firedKeys[fk]) continue;
+      firedKeys[fk] = 1;
+      ringAlarm(a, false);
+    }
+    /* 稍后再响 */
+    if(snoozeAt && Date.now() >= snoozeAt){
+      snoozeAt = 0;
+      if(ringing) ringAlarm(ringing, false);
+    }
+    /* 自动打开 / 关闭设备 */
+    var po = sched.powerOn, pf = sched.powerOff;
+    if(po && po.on && po.h === now.getHours() && po.m === now.getMinutes()){
+      var k1 = 'on|' + key; if(!firedKeys[k1]){ firedKeys[k1] = 1; ringPowerOn(false); }
+    }
+    if(pf && pf.on && pf.h === now.getHours() && pf.m === now.getMinutes()){
+      var k2 = 'off|' + key; if(!firedKeys[k2]){ firedKeys[k2] = 1; ringPowerOff(false); }
+    }
+    checkSleepTimer();
+  }
+
+  /* ---- 设置面板绑定 ---- */
+  function setupScheduler(){
+    loadSched();
+
+    var addBtn = document.getElementById('addAlarm');
+    if(addBtn) addBtn.onclick = function(){
+      var now = new Date();
+      sched.alarms.push({
+        id: 'a' + Date.now() + Math.floor(Math.random()*1000),
+        h: now.getHours(), m: now.getMinutes(),
+        days: [], on: true, url: '', name: ''
+      });
+      saveSched(); renderAlarms();
+      toast('已添加闹钟，请选铃声电台');
+    };
+
+    var sel = document.getElementById('sleepSel');
+    var custom = document.getElementById('sleepCustom');
+    function applySleep(){
+      if(!sel) return;
+      var v = sel.value;
+      if(v === 'custom'){
+        var n = parseInt((custom && custom.value) || '0', 10);
+        if(!n || n < 1) n = 1;
+        if(n > 1440) n = 1440;
+        sched.sleepMin = n;
+        if(custom) custom.value = n;
+      }else{
+        sched.sleepMin = parseInt(v, 10) || 0;
+      }
+      sched.sleepCustom = sched.sleepMin;
+      saveSched();
+      resetSleepTimer();
+      toast(sched.sleepMin ? ('播放时长：' + sched.sleepMin + ' 分钟') : '播放时长：不限');
+    }
+    if(sel){
+      var cur = sched.sleepMin || 0;
+      var known = false;
+      for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value === String(cur)){ known = true; break; } }
+      if(cur > 0 && !known){
+        sel.value = 'custom';
+        if(custom) custom.value = cur;
+      }else{
+        sel.value = String(cur);
+      }
+      sel.onchange = function(){
+        if(sel.value === 'custom' && custom){ custom.hidden = false; custom.focus(); if(!custom.value) custom.value = String(sched.sleepMin || 30); }
+        applySleep();
+      };
+    }
+    if(custom){
+      custom.hidden = !(sched.sleepMin > 0 && sel && sel.value === 'custom');
+      custom.onchange = applySleep;
+    }
+
+    var onT = document.getElementById('powerOnTime'), onSw = document.getElementById('powerOnSw');
+    var offT = document.getElementById('powerOffTime'), offSw = document.getElementById('powerOffSw');
+    if(onT) onT.value = timeText(sched.powerOn);
+    if(offT) offT.value = timeText(sched.powerOff);
+    if(onSw) onSw.checked = !!sched.powerOn.on;
+    if(offSw) offSw.checked = !!sched.powerOff.on;
+    function parseTime(el, def){
+      var v = (el && el.value) ? el.value.split(':') : null;
+      if(!v || v.length < 2) return def;
+      return { h: parseInt(v[0],10) || 0, m: parseInt(v[1],10) || 0 };
+    }
+    if(onT) onT.onchange = function(){ var t = parseTime(onT, sched.powerOn); sched.powerOn.h = t.h; sched.powerOn.m = t.m; saveSched(); };
+    if(offT) offT.onchange = function(){ var t = parseTime(offT, sched.powerOff); sched.powerOff.h = t.h; sched.powerOff.m = t.m; saveSched(); };
+    if(onSw) onSw.onchange = function(){ sched.powerOn.on = onSw.checked; saveSched(); toast(sched.powerOn.on ? ('自动打开：' + timeText(sched.powerOn)) : '已关闭自动打开'); };
+    if(offSw) offSw.onchange = function(){ sched.powerOff.on = offSw.checked; saveSched(); toast(sched.powerOff.on ? ('自动关闭：' + timeText(sched.powerOff)) : '已关闭自动关闭'); };
+
+    var stopBtn = document.getElementById('alarmStop');
+    var snzBtn = document.getElementById('alarmSnooze');
+    if(stopBtn) stopBtn.onclick = function(){
+      hideAlarmBar();
+      try{ var el = getAudio(); if(el && !el.paused) el.pause(); }catch(e){}
+      toast('闹钟已停止');
+    };
+    if(snzBtn) snzBtn.onclick = function(){
+      snoozeAt = Date.now() + 5*60000;
+      hideAlarmBarQuiet();
+      try{ var el = getAudio(); if(el && !el.paused) el.pause(); }catch(e){}
+      toast('5 分钟后再次响铃');
+    };
+    function hideAlarmBarQuiet(){
+      var bar = document.getElementById('alarmBar');
+      if(bar) bar.hidden = true;
+    }
+
+    /* 播放时长与播放/暂停联动 */
+    try{
+      var el2 = getAudio();
+      if(el2){
+        el2.addEventListener('playing', function(){ if(!snoozeAt) startSleepTimer(); });
+        el2.addEventListener('play', function(){ if(!snoozeAt) startSleepTimer(); });
+        el2.addEventListener('pause', pauseSleepTimer);
+      }
+    }catch(e){}
+
+    renderAlarms();
+    /* 每次打开设置抽屉都重画闹钟列表：收藏可能刚变过，铃声下拉要跟着更新 */
+    try{
+      var sm = document.getElementById('settingsModal');
+      if(sm && window.MutationObserver){
+        new MutationObserver(function(){
+          if(sm.classList.contains('open')) renderAlarms();
+        }).observe(sm, {attributes:true, attributeFilter:['class']});
+      }
+    }catch(e){}
+    /* 首次进入：把已有 schedule 交给原生层（APK 重启 / 开机后重新排程） */
+    pushScheduleNative();
+    consumePendingAlarm();
+
+    setInterval(tickScheduler, 5000);      // 分钟级判定（5s 粒度，对电池几乎无影响）
+    setInterval(updateTimerBadge, 1000);   // 倒计时走秒
+    document.addEventListener('visibilitychange', function(){ tickScheduler(); });
+    schedLog('定时与闹钟已就绪：' + sched.alarms.length + ' 个闹钟，播放时长 ' + (sched.sleepMin || '不限') + ' 分钟');
+  }
+
   document.addEventListener('DOMContentLoaded', function(){
     renderQuickFavs();
     setupTabs();
@@ -5162,6 +5808,7 @@ document.addEventListener('DOMContentLoaded', init);
     setupThemeSwitcher();     /* 四套主题切换 */
     setupAboutPanel();        /* 版权页版本号联动 */
     setupRadioPanel();
+    setupScheduler();         /* v58：闹钟 / 播放时长 / 自动开机关机 */
     setupClock();
     setupFirstStation();
     tuneTheme();
