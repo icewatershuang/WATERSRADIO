@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v60</title>
+<title>WATERS RADIO · v61</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1309,7 +1309,11 @@
   /* 覆盖 .ios-input/.ios-select 的默认 flex:1，让定时控件保持紧凑宽度 */
   .sched-select{flex:0 0 auto;min-width:118px;width:auto}
   .sched-num{flex:0 0 auto;min-width:0;width:112px;padding:12px 12px}
-  .sched-time{flex:0 0 auto;min-width:0;width:106px;padding:12px 10px}
+  /* v61：用 .setting-btns 提升特异性，盖过下方 .ios-input/.ios-select{width:100%}（同特异性靠后出现会反超），
+     否则时间输入/执行方式下拉会被拉成整行宽、三项并排时溢出卡片 */
+  .setting-btns .sched-time{flex:0 0 auto;min-width:0;width:106px;padding:12px 10px}
+  /* v61：执行方式下拉（单次/每天/工作日/周末）比时长下拉窄一点 */
+  .setting-btns .sched-mode{flex:0 0 auto;min-width:88px;width:auto}
   /* ── v60：窄屏（手机竖屏）设置项收紧，保证「时间输入 + 开关」「备份 + 恢复」
      这些右侧控件组完整落在可视范围内（用户截图：自动开关机行溢出屏幕）── */
   @media (max-width:430px){
@@ -1317,7 +1321,7 @@
     .setting-item{padding:13px 14px;gap:10px}
     .setting-btn{padding:0 14px;min-height:40px;font-size:13.5px}
     .setting-btns{gap:8px}
-    .sched-time{width:96px;padding:10px 8px}
+    .setting-btns .sched-time{width:96px;padding:10px 8px}
     .sched-select{min-width:104px}
     .switch{width:42px;height:24px}
     .switch-track::before{width:18px;height:18px}
@@ -1485,10 +1489,12 @@
        时钟分隔线通高 —— 用户圈出的「左下空带」消失 */
     .screen-row{align-items:stretch;align-content:stretch}
     /* v56：信息组（label/台名/状态）整组垂直居中。
-       v60：顶部预留 48→14px（用户要求紧凑，类似横屏密度）；
-       底部仍保留 48px —— 那是 v55 给 ICY 两行块（绝对定位贴行底，最高约 43px）的让位带，
-       不能收，否则状态行会与 ICY 歌名重叠 */
-    .screen-info{justify-content:center;padding-top:14px;padding-bottom:48px}
+       v60：顶部预留 48→14px（用户要求紧凑）。
+       v61：底部让位带也动态化 —— 默认 14px（无 ICY 时屏面紧凑，用户截图圈出的空带消除）；
+       仅当 ICY 两行块出现（.icy-reserve，只有 APK 会推 ICY）才恢复 48px，
+       避免状态行与贴行底的 ICY 歌名重叠（v55 语义保留） */
+    .screen-info{justify-content:center;padding-top:14px;padding-bottom:14px}
+    .screen-info.icy-reserve{padding-bottom:48px}
     /* v54：ICY 两行块绝对定位贴行底（全宽），会与信息列最后一项（状态行）撞在同一底边带；
        v55：预留提高到 48px —— ICY 让位后宽度变窄，长歌名会折到第三行（约 43px），
        48px 保证状态行与任意行数的 ICY 都不重叠 */
@@ -1999,17 +2005,29 @@
       </div>
 
       <div class="setting-item">
-        <span class="setting-label">自动打开设备<small class="sched-hint">到点唤醒设备、打开本程序并开始播放；设备完全断电时需系统支持定时开机</small></span>
+        <span class="setting-label">自动打开设备<small class="sched-hint">到点唤醒设备、打开本程序并开始播放；默认单次执行，也可选每天 / 工作日 / 周末重复。设备完全断电时需系统支持定时开机</small></span>
         <span class="setting-btns">
           <input class="ios-input sched-time" type="time" id="powerOnTime" value="07:00" />
+          <select class="ios-select sched-select sched-mode" id="powerOnMode" title="执行方式">
+            <option value="single">单次执行</option>
+            <option value="daily">每天</option>
+            <option value="workday">工作日</option>
+            <option value="weekend">周末</option>
+          </select>
           <label class="switch"><input type="checkbox" id="powerOnSw" /><span class="switch-track"></span></label>
         </span>
       </div>
 
       <div class="setting-item">
-        <span class="setting-label">自动关闭设备<small class="sched-hint">到点停止播放并进入待机；真正的断电关机需系统支持</small></span>
+        <span class="setting-label">自动关闭设备<small class="sched-hint">到点停止播放并进入待机；默认单次执行，也可选每天 / 工作日 / 周末重复。真正的断电关机需系统支持</small></span>
         <span class="setting-btns">
           <input class="ios-input sched-time" type="time" id="powerOffTime" value="23:00" />
+          <select class="ios-select sched-select sched-mode" id="powerOffMode" title="执行方式">
+            <option value="single">单次执行</option>
+            <option value="daily">每天</option>
+            <option value="workday">工作日</option>
+            <option value="weekend">周末</option>
+          </select>
           <label class="switch"><input type="checkbox" id="powerOffSw" /><span class="switch-track"></span></label>
         </span>
       </div>
@@ -4094,11 +4112,18 @@ function renderIcyLines(t){
   var l1  = document.getElementById('npIcyL1');
   var l2  = document.getElementById('npIcyL2');
   if(!box || !l1 || !l2) return;
-  layoutIcyInset();             /* v55：先量时钟是否占据底边带，再决定 ICY 右边界 */
   var pair = splitIcyTwoLines(t);
   l1.textContent = pair[0] || '';
   l2.textContent = pair[1] || '';
-  box.classList.toggle('show', !!(pair[0] || pair[1]));
+  var has = !!(pair[0] || pair[1]);
+  box.classList.toggle('show', has);
+  /* v61：竖屏 LED 的 48px 底部让位带只为 ICY 两行块而留 ——
+     有 ICY 内容（仅 APK 会有）才加 .icy-reserve，没有就收紧，屏面不再空旷。
+     ⚠️ 必须在 layoutIcyInset() 之前切换：让位带改变行高，时钟位置要在
+     最终布局下量，--icy-inset 才算得准 */
+  var si = document.querySelector('.screen-info');
+  if(si) si.classList.toggle('icy-reserve', has);
+  layoutIcyInset();             /* v55：量时钟是否占据底边带，决定 ICY 右边界 */
 }
 
 function setSyncedText(t){
@@ -5402,6 +5427,9 @@ document.addEventListener('DOMContentLoaded', init);
     if(typeof s.sleepMin !== 'number') s.sleepMin = 0;
     if(!s.powerOn) s.powerOn = {h:7, m:0, on:false};
     if(!s.powerOff) s.powerOff = {h:23, m:0, on:false};
+    /* v61：执行方式 —— single 单次（默认）/ daily 每天 / workday 工作日 / weekend 周末 */
+    if(!s.powerOn.mode) s.powerOn.mode = 'single';
+    if(!s.powerOff.mode) s.powerOff.mode = 'single';
     sched = s;
     return s;
   }
@@ -5414,7 +5442,13 @@ document.addEventListener('DOMContentLoaded', init);
 
   /* ---- 原生桥：把 schedule 交给 APK 的 AlarmManager（浏览器里静默降级） ---- */
   function schedPayload(){
-    var out = { alarms: [], powerOn: sched.powerOn, powerOff: sched.powerOff, volume: curVol() };
+    /* v61：powerOn/powerOff 带上执行方式 mode（single/daily/workday/weekend），
+       原生 AlarmScheduler 据此换算重复日期，并在单次触发后自动关掉开关 */
+    var out = {
+      alarms: [], volume: curVol(),
+      powerOn: { h:sched.powerOn.h, m:sched.powerOn.m, on:sched.powerOn.on, mode:sched.powerOn.mode||'single' },
+      powerOff:{ h:sched.powerOff.h, m:sched.powerOff.m, on:sched.powerOff.on, mode:sched.powerOff.mode||'single' }
+    };
     for(var i=0;i<sched.alarms.length;i++){
       var a = sched.alarms[i];
       if(!a.on) continue;
@@ -5437,8 +5471,21 @@ document.addEventListener('DOMContentLoaded', init);
       if(!raw) return;
       var p = JSON.parse(raw);
       if(!p) return;
-      if(p.action === 'poweroff'){ ringPowerOff(true); return; }
-      if(p.action === 'poweron'){ ringPowerOn(true); return; }
+      if(p.action === 'poweroff'){
+        ringPowerOff(true);
+        /* v61：单次执行 —— 触发后关掉开关（网页这份 localStorage 与原生各自同步） */
+        if((sched.powerOff.mode||'single') === 'single' && sched.powerOff.on){
+          sched.powerOff.on = false; saveSched(); syncPowerSwitches();
+        }
+        return;
+      }
+      if(p.action === 'poweron'){
+        ringPowerOn(true);
+        if((sched.powerOn.mode||'single') === 'single' && sched.powerOn.on){
+          sched.powerOn.on = false; saveSched(); syncPowerSwitches();
+        }
+        return;
+      }
       ringAlarm({ name: p.name || '', url: p.url || '' }, true);
     }catch(e){}
   }
@@ -5451,6 +5498,26 @@ document.addEventListener('DOMContentLoaded', init);
     return days.indexOf(now.getDay()) >= 0;
   }
   function timeText(a){ return pad2(a.h) + ':' + pad2(a.m); }
+  /* v61：执行方式 → 重复日期（0=周日…6=周六；空数组=每天）。
+     single 也返回空（按「下一次到达时刻」触发一次，触发后由调用方关掉开关） */
+  function modeDays(m){
+    if(m === 'workday') return [1,2,3,4,5];
+    if(m === 'weekend') return [0,6];
+    return [];
+  }
+  function modeText(m){
+    if(m === 'daily') return '每天';
+    if(m === 'workday') return '工作日（一至五）';
+    if(m === 'weekend') return '周末（六、日）';
+    return '单次执行';
+  }
+  /* v61：把自动开关机的开关状态同步回设置面板的复选框 */
+  function syncPowerSwitches(){
+    var onSw = document.getElementById('powerOnSw');
+    var offSw = document.getElementById('powerOffSw');
+    if(onSw) onSw.checked = !!(sched.powerOn && sched.powerOn.on);
+    if(offSw) offSw.checked = !!(sched.powerOff && sched.powerOff.on);
+  }
   function daysText(days){
     if(!days || !days.length) return '每天';
     var arr = days.slice().sort();
@@ -5769,13 +5836,19 @@ document.addEventListener('DOMContentLoaded', init);
       snoozeAt = 0;
       if(ringing) ringAlarm(ringing, false);
     }
-    /* 自动打开 / 关闭设备 */
+    /* 自动打开 / 关闭设备（v61：按执行方式过滤日期；单次触发后自动关掉开关） */
     var po = sched.powerOn, pf = sched.powerOff;
-    if(po && po.on && po.h === now.getHours() && po.m === now.getMinutes()){
-      var k1 = 'on|' + key; if(!firedKeys[k1]){ firedKeys[k1] = 1; ringPowerOn(false); }
+    if(po && po.on && po.h === now.getHours() && po.m === now.getMinutes() && daysHit(modeDays(po.mode), now)){
+      var k1 = 'on|' + key; if(!firedKeys[k1]){
+        firedKeys[k1] = 1; ringPowerOn(false);
+        if((po.mode||'single') === 'single'){ po.on = false; saveSched(); syncPowerSwitches(); }
+      }
     }
-    if(pf && pf.on && pf.h === now.getHours() && pf.m === now.getMinutes()){
-      var k2 = 'off|' + key; if(!firedKeys[k2]){ firedKeys[k2] = 1; ringPowerOff(false); }
+    if(pf && pf.on && pf.h === now.getHours() && pf.m === now.getMinutes() && daysHit(modeDays(pf.mode), now)){
+      var k2 = 'off|' + key; if(!firedKeys[k2]){
+        firedKeys[k2] = 1; ringPowerOff(false);
+        if((pf.mode||'single') === 'single'){ pf.on = false; saveSched(); syncPowerSwitches(); }
+      }
     }
     checkSleepTimer();
   }
@@ -5848,8 +5921,15 @@ document.addEventListener('DOMContentLoaded', init);
     }
     if(onT) onT.onchange = function(){ var t = parseTime(onT, sched.powerOn); sched.powerOn.h = t.h; sched.powerOn.m = t.m; saveSched(); };
     if(offT) offT.onchange = function(){ var t = parseTime(offT, sched.powerOff); sched.powerOff.h = t.h; sched.powerOff.m = t.m; saveSched(); };
-    if(onSw) onSw.onchange = function(){ sched.powerOn.on = onSw.checked; saveSched(); toast(sched.powerOn.on ? ('自动打开：' + timeText(sched.powerOn)) : '已关闭自动打开'); };
-    if(offSw) offSw.onchange = function(){ sched.powerOff.on = offSw.checked; saveSched(); toast(sched.powerOff.on ? ('自动关闭：' + timeText(sched.powerOff)) : '已关闭自动关闭'); };
+    if(onSw) onSw.onchange = function(){ sched.powerOn.on = onSw.checked; saveSched(); toast(sched.powerOn.on ? ('自动打开：' + timeText(sched.powerOn) + ' · ' + modeText(sched.powerOn.mode)) : '已关闭自动打开'); };
+    if(offSw) offSw.onchange = function(){ sched.powerOff.on = offSw.checked; saveSched(); toast(sched.powerOff.on ? ('自动关闭：' + timeText(sched.powerOff) + ' · ' + modeText(sched.powerOff.mode)) : '已关闭自动关闭'); };
+    /* v61：执行方式下拉（单次执行 / 每天 / 工作日 / 周末） */
+    var onMode = document.getElementById('powerOnMode');
+    var offMode = document.getElementById('powerOffMode');
+    if(onMode){ onMode.value = sched.powerOn.mode || 'single';
+      onMode.onchange = function(){ sched.powerOn.mode = onMode.value; saveSched(); toast('自动打开：' + timeText(sched.powerOn) + ' · ' + modeText(onMode.value)); }; }
+    if(offMode){ offMode.value = sched.powerOff.mode || 'single';
+      offMode.onchange = function(){ sched.powerOff.mode = offMode.value; saveSched(); toast('自动关闭：' + timeText(sched.powerOff) + ' · ' + modeText(offMode.value)); }; }
 
     var stopBtn = document.getElementById('alarmStop');
     var snzBtn = document.getElementById('alarmSnooze');
