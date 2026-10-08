@@ -55,5 +55,7 @@ android {
 }
 
 dependencies {
-    /* 无第三方依赖：用系统 WebView + 原生 MediaSession（API 21+）+ 原生通知 API */
+    /* v7.0：离线语音识别（Vosk）。纯 NDK + 轻量 Java 包装，不引入 AndroidX。
+       模型(~40MB)不进 APK，首次开启时按需下载到 files 目录，之后完全离线。 */
+    implementation 'com.alphacephei:vosk-android:0.3.47'
 }
