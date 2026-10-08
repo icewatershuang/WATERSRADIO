@@ -137,11 +137,14 @@ public class MainActivity extends Activity {
     /* ------------------------------------------------------------
      * v60：全屏显示（隐藏状态栏，内容铺满整屏，连状态栏也盖掉）
      * 网页设置「全屏显示」开关 → JsBridge.setImmersive → 这里在 UI 线程执行。
+     * ⚠️ 不能叫 setImmersive —— Activity 自带 final 语义的同名方法（API 18+）会冲突
+     *   （实测 #148 构建失败：setImmersive(boolean) in MainActivity cannot override
+     *    setImmersive(boolean) in Activity），故取名 setImmersiveMode。
      * · API 30+：WindowInsetsController 隐藏 statusBars，滑动临时呼出；
      * · API 16~29：systemUiVisibility 沉浸式标记；
      * · API 14~15：FLAG_FULLSCREEN 窗口标记兜底。
      * ---------------------------------------------------------- */
-    static void setImmersive(final boolean on) {
+    static void setImmersiveMode(final boolean on) {
         if (instance == null) return;
         instance.runOnUiThread(() -> applyImmersive(instance, on));
     }
