@@ -44,6 +44,11 @@ public class RadioPlaybackService extends Service {
 
     /* v58：JsBridge / 闹钟排程用的应用级 Context（Service 创建时写入，不持有 Activity） */
     private static volatile android.content.Context sAppContext = null;
+    /* v7.0：单例引用（JsBridge 静态类借此调用 AsrController） */
+    private static volatile RadioPlaybackService sInstance = null;
+
+    /* v7.0：语音识别字幕控制器（离线 Vosk） */
+    private AsrController asr;
 
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
@@ -64,6 +69,8 @@ public class RadioPlaybackService extends Service {
     public void onCreate() {
         super.onCreate();
         sAppContext = getApplicationContext();
+        sInstance = this;
+        asr = new AsrController(this);   /* v7.0：离线语音识别（按设备能力开启） */
         createChannel();
         if (Build.VERSION.SDK_INT >= 21) setupMediaSession();
         acquireLocks();
@@ -79,6 +86,11 @@ public class RadioPlaybackService extends Service {
             nowTitle = intent.getStringExtra("title"); if (nowTitle == null) nowTitle = "";
             updateSession();
             startIcyIfNeeded();
+            /* v7.0：播放状态变化时同步语音识别（开播换流 / 停播关识别） */
+            if (asr != null) {
+                if (nowPlaying) asr.onStreamChanged(nowUrl);
+                else asr.onPlaybackStopped();
+            }
         }
         /* START_STICKY：被系统杀掉后自动重启，尽量保住后台播放 */
         return START_STICKY;
@@ -87,6 +99,8 @@ public class RadioPlaybackService extends Service {
     @Override
     public void onDestroy() {
         stopIcy();
+        if (asr != null) asr.release();   /* v7.0：释放 Vosk 模型 */
+        sInstance = null;
         releaseLocks();
         if (mediaSession != null) {
             mediaSession.release();
@@ -138,6 +152,16 @@ public class RadioPlaybackService extends Service {
         i.putExtra("js", jsExpression);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(i);
+    }
+
+    /* v7.0：把识别出的字幕文本回传主页（window.__onAsr） */
+    void callAsrJs(String text, boolean isFinal) {
+        callJs("window.__onAsr && window.__onAsr(" + JSONObject.quote(text) + "," + (isFinal ? "true" : "false") + ")");
+    }
+
+    /* v7.0：识别相关提示（用网页的 toast） */
+    void callAsrToast(String msg) {
+        callJs("window.toast && window.toast(" + JSONObject.quote(msg) + ")");
     }
 
     /* ------------------------------------------------------------
@@ -445,6 +469,28 @@ public class RadioPlaybackService extends Service {
         @android.webkit.JavascriptInterface
         public void setImmersive(String on) {
             try { MainActivity.setImmersiveMode("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
+        }
+
+        /* ---- v7.0：语音识别字幕（离线 Vosk）----
+           网页「语音字幕」开关 / 语言选择 → 原生启动并行解码 + Vosk 识别，
+           结果经 window.__onAsr 回传主页字幕层。能力不满足时 asrAvailable() 返回 false，
+           网页端整项隐藏。 */
+        @android.webkit.JavascriptInterface
+        public boolean asrAvailable() {
+            return sInstance != null && sInstance.asr != null && sInstance.asr.isAvailable();
+        }
+
+        @android.webkit.JavascriptInterface
+        public void setAsr(String on) {
+            if (sInstance != null && sInstance.asr != null) {
+                boolean en = "1".equals(on) || "true".equals(on);
+                sInstance.asr.setEnabled(en, sInstance.nowUrl);
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        public void setAsrLang(String lang) {
+            if (sInstance != null && sInstance.asr != null) sInstance.asr.setLang(lang);
         }
 
         /* JsBridge 是无 Context 的静态类：优先用 Service 自己，其次 MainActivity */
