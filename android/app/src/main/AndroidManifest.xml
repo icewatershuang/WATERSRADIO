@@ -2,9 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- v7.0：Vosk AAR 的 minSdk=21，本应用 minSdk=14；保留老设备可安装（仅不提供识别），
-         用 overrideLibrary 抑制合并期报错，识别能力在运行时再门控。 -->
-    <uses-sdk tools:overrideLibrary="com.alphacephei.vosk" />
+    <!-- v7.0：Vosk AAR 的 minSdk=21（其 manifest 包名是 org.vosk，不是 Maven 坐标 com.alphacephei），
+         本应用 minSdk=14；保留老设备可安装（仅不提供识别），
+         用 overrideLibrary 抑制合并期报错，识别能力在运行时再门控（isAvailable() 仅 API≥21 才 true）。 -->
+    <uses-sdk tools:overrideLibrary="org.vosk" />
 
     <!-- 网络 & 状态 -->
     <uses-permission android:name="android.permission.INTERNET" />
