@@ -55,7 +55,7 @@ public class AsrController {
     private static final Map<String, String> MODEL_ZIP = new HashMap<>();
     static {
         MODEL_ZIP.put("en", "vosk-model-small-en-us-0.15.zip");   // 英语（小模型 ~40MB）
-        MODEL_ZIP.put("zh", "vosk-model-small-zh-cn-0.3.zip");    // 中文（小模型 ~40MB）
+        MODEL_ZIP.put("zh", "vosk-model-small-cn-0.22.zip");     // 中文（官方小模型 ~42MB；⚠️ 官方名是 small-cn-0.22，不存在 small-zh-cn-0.3）
     }
 
     private final RadioPlaybackService service;

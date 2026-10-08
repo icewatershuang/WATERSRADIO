@@ -50,13 +50,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: android/app/src/main/assets/vosk
-          key: vosk-models-small-en-us-0.15-zh-cn-0.3
+          key: vosk-models-small-en-us-0.15-cn-0.22
 
       - name: Bundle Vosk speech models (built-in, no download at runtime)
         run: |
           mkdir -p android/app/src/main/assets/vosk
           cd android/app/src/main/assets/vosk
-          for f in vosk-model-small-en-us-0.15.zip vosk-model-small-zh-cn-0.3.zip; do
+          for f in vosk-model-small-en-us-0.15.zip vosk-model-small-cn-0.22.zip; do
             if [ ! -s "$f" ]; then
               echo "Downloading $f ..."
               curl -fL --retry 5 --retry-delay 5 -o "$f" "https://alphacephei.com/vosk/models/$f"
