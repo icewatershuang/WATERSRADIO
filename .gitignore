@@ -2,10 +2,11 @@
 preview-*.png
 全屏-*.png
 
-# Android assets：由 build-apk.yml 从根目录 index.html / hls.min.js 自动同步，
-# 保持「index.html 唯一数据源」，不入库以免双份漂移。
+# Android assets：由 build-apk.yml 从 app-web/（v7.0 冻结版网页源）自动同步，
+# 不入库以免双份漂移。公开网页（根目录 index.html，冻结 v62）与 APP 网页已解耦。
 android/app/src/main/assets/index.html
 android/app/src/main/assets/hls.min.js
+android/app/src/main/assets/version.txt
 
 # 构建产物
 builds/

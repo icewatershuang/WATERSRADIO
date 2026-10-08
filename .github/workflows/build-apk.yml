@@ -35,9 +35,12 @@ jobs:
           sdkmanager --list_installed | head -20
 
       - name: Sync web assets into Android assets
+        # v7.0 起 APP 网页源是 app-web/（v7.0 冻结版，含字幕功能），
+        # 与公开网页（仓库根 index.html，冻结在 v62）彻底解耦——
+        # 根目录以后任何改动都不再进 APK。
         run: |
           mkdir -p android/app/src/main/assets
-          cp index.html hls.min.js android/app/src/main/assets/
+          cp app-web/index.html app-web/hls.min.js app-web/version.txt android/app/src/main/assets/
 
       - name: Build Debug APK (auto-signed)
         uses: gradle/gradle-build-action@v3

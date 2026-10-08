@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 启动图标自适应背景：奶白/象牙（与 App 默认主题同源） -->
-    <color name="ic_launcher_background">#F4EEDD</color>
+    <!-- 启动图标自适应背景：水蓝深青（v7 独立版专属配色，与 v6x 的奶白一眼区分） -->
+    <color name="ic_launcher_background">#0E7490</color>
 </resources>

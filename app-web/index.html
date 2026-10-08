@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v62</title>
+<title>WATERS RADIO · v7.0</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -537,6 +537,26 @@
   }
   /* 英文按单词折行（不拆词），只有超长单词才强制断开 */
   .np-icy div{overflow-wrap:break-word;word-break:normal}
+
+  /* v7.0：语音识别字幕层（安装版经 Vosk 离线识别，流式文本回传主页；默认隐藏，识别有文字才显示） */
+  .np-subtitle{
+    display:none;position:absolute;left:8px;right:8px;bottom:3px;z-index:5;
+    padding:6px 12px;border-radius:8px;
+    background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.64));
+    color:#fff;font-size:14px;line-height:1.35;text-align:center;
+    -webkit-text-stroke:0;text-shadow:0 1px 3px rgba(0,0,0,.85);
+    letter-spacing:.01em;overflow:hidden;max-height:3.4em;
+  }
+  .np-subtitle.show{display:block}
+  /* 浅色主题（水墨屏 / 纯黑白）屏面是白的 → 字幕翻成浅底深字，保证可读 */
+  html[data-theme="mono"] .np-subtitle,
+  html[data-theme="eink"] .np-subtitle{
+    background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(248,246,240,.96));
+    color:#1a1a1a;text-shadow:none;box-shadow:0 0 0 1px rgba(0,0,0,.12);
+  }
+  /* 语言下拉在设置行里要紧凑，不能占满整行把开关挤出去（特异性 ID 压过通用 .ios-select{width:100%}） */
+  #subtitleLang{ width:auto;min-width:84px;flex:0 0 auto; }
+  #subtitleItem[hidden]{ display:none; }
 
   /* ===== 屏内电子表时钟：纯 CSS 七段码数码管 ===== */
   .lcd-clock{
@@ -1772,6 +1792,8 @@
           <div class="np-marquee" id="npMarquee" aria-hidden="true"><span class="np-marquee-track" id="npMarqueeTrack"></span></div>
         </div>
         <div class="viz-wrap"><canvas class="viz" id="viz" width="600" height="46.8"></canvas></div>
+        <!-- v7.0：语音识别字幕层（安装版经 Vosk 离线识别，流式文本回传主页） -->
+        <div class="np-subtitle" id="npSubtitle"></div>
       </div>
       <div class="np-repair" id="repairHint"></div>
 
@@ -2081,6 +2103,19 @@
         <span class="setting-label">全屏显示<small class="sched-hint">铺满整个屏幕，连手机状态栏也一并盖掉；网页版由浏览器全屏授权，安装版即时生效</small></span>
         <label class="switch"><input type="checkbox" id="fullscreenSw" /><span class="switch-track"></span></label>
       </div>
+
+      <!-- v7.0：语音识别字幕（安装版经 Vosk 离线识别，流式字幕回传主页；仅支持的设备显示本项） -->
+      <div class="setting-item" id="subtitleItem" hidden>
+        <span class="setting-label">语音字幕<small class="sched-hint">安装版把直播流离线识别成文字、以字幕形式显示，方便跟读外语电台；仅支持的设备显示本项</small></span>
+        <span class="setting-btns">
+          <select class="ios-select sched-select" id="subtitleLang">
+            <option value="en">英语</option>
+            <option value="zh">中文</option>
+            <option value="auto">自动</option>
+          </select>
+          <label class="switch"><input type="checkbox" id="subtitleSw" /><span class="switch-track"></span></label>
+        </span>
+      </div>
       <div class="setting-item">
         <span class="setting-label label-nowrap">数据备份 / 恢复</span>
         <span class="setting-btns">
@@ -2212,7 +2247,9 @@ const LS = {
   sourceCache:'waters_radio.sourceCache.v2',// 动态源缓存 {stationName: [urls]}
   eq:'waters_radio.eq.v1',                  // 音色预设（flat/warm/clear/bass）
   autoLevel:'waters_radio.autoLevel.v1',    // 自动电平匹配开关（1/0）
-  fs:'waters_radio.fs.v1'                   // v60：全屏显示（覆盖状态栏）开关（1/0）
+  fs:'waters_radio.fs.v1',                  // v60：全屏显示（覆盖状态栏）开关（1/0）
+  asr:'waters_radio.asr.v1',                // v7.0：语音字幕开关（1/0）
+  asrLang:'waters_radio.asrLang.v1'         // v7.0：识别语言（en/zh/auto）
 };
 /* 本地存储可用性探测：部分浏览器在 file:// 下（尤其 Safari / 隐私模式）会禁用或抛错 localStorage，
    此时数据无法自动保存。这里在启动时做一次探测，并在保存失败时明确提示用户改用「数据备份」。 */
@@ -2684,6 +2721,8 @@ audio.preload = 'none';
 let masterVol = parseFloat(loadStr(LS.vol,'0.8'));   // 整体主音量（图建立前用 audio.volume 兜底，建立后改用 masterGain）
 audio.volume = masterVol;
 let autoLevelOn = loadStr(LS.autoLevel,'1')==='1';     // 默认开启自动电平匹配（响度归一）
+let asrOn = loadStr(LS.asr,'0')==='1';                 // v7.0：语音字幕默认关闭（按设备能力开启）
+let asrLang = loadStr(LS.asrLang,'en');                // v7.0：识别语言默认英语
 let eqPreset    = loadStr(LS.eq,'flat');               // 默认原声（平直）
 audio.muted = loadStr(LS.mute,'false')==='true';
 
@@ -4019,6 +4058,36 @@ function setAutoLevel(on){
   if(levelGain) levelGain.gain.value = 1;   // 切换后从 1 重新收敛
   const cb = $('#autoLevel'); if(cb) cb.checked = autoLevelOn;
 }
+
+  /* v7.0：语音识别字幕 —— 能力探测 / 渲染 / 开关 / 语言 */
+  function asrAvailable(){
+    return !!(window.WatersNative && typeof window.WatersNative.asrAvailable === 'function'
+      && window.WatersNative.asrAvailable());
+  }
+  function renderSubtitle(text){
+    var box = document.getElementById('npSubtitle');
+    if(!box) return;
+    if(!text){ box.textContent=''; box.classList.remove('show'); return; }
+    box.textContent = text;
+    box.classList.add('show');
+  }
+  function setAsr(on){
+    asrOn = !!on;
+    saveStr(LS.asr, asrOn ? '1':'0');
+    var cb = $('#subtitleSw'); if(cb) cb.checked = asrOn;
+    if(asrAvailable() && typeof window.WatersNative.setAsr === 'function'){
+      try{ window.WatersNative.setAsr(asrOn ? '1':'0'); }catch(e){}
+    }
+    if(!asrOn) renderSubtitle('');   /* 关掉立即清屏 */
+  }
+  function setAsrLang(lang){
+    asrLang = lang || 'en';
+    saveStr(LS.asrLang, asrLang);
+    var sel = $('#subtitleLang'); if(sel) sel.value = asrLang;
+    if(asrAvailable() && typeof window.WatersNative.setAsrLang === 'function'){
+      try{ window.WatersNative.setAsrLang(asrLang); }catch(e){}
+    }
+  }
 function setVolume(v){    // v: 0~1
   masterVol = Math.max(0, Math.min(1, v));
   saveStr(LS.vol, String(masterVol));
@@ -4137,9 +4206,18 @@ function setSyncedText(t){
   box.classList.add('show');
 }
 window.__onIcy = function(t){ try{ setSyncedText(t); }catch(e){} };
+/* v7.0：原生层（APK + Vosk）把识别出的文字流式推回来；isFinal 标记是否为整句终稿，
+   流式 partial 与 final 都直接渲染最新文本，关掉字幕开关则一律丢弃（双重保险）。 */
+window.__onAsr = function(text, isFinal){
+  try{
+    if(!asrOn) return;
+    renderSubtitle((text||'').trim());
+  }catch(e){}
+};
 
 function renderNow(){
   setSyncedText('');   /* v47：切台即清空旧同步文字，等新 ICY 推来 */
+  renderSubtitle('');  /* v7.0：切台同时清空语音字幕 */
   const cur = state.current;
   /* v43：屏面显示规整短名（displayName 收主名，如「80后音悦台」），
      CSS 允许两行折行，长名不再截成「W…」这种残名 */
@@ -4546,6 +4624,23 @@ function bind(){
     };
     // 启动时恢复（APK 走原生沉浸式；浏览器此时无手势，只能跳过）
     applyFs(fsOn(), false);
+  }
+
+  /* ---------- v7.0：语音字幕（仅支持的设备显示开关；由 APK 经 Vosk 提供识别） ---------- */
+  const subItem = document.getElementById('subtitleItem');
+  if(subItem){
+    if(asrAvailable()){
+      subItem.hidden = false;
+      const subCb = document.getElementById('subtitleSw');
+      if(subCb){ subCb.checked = asrOn; subCb.onchange = e => setAsr(e.target.checked); }
+      const subLang = document.getElementById('subtitleLang');
+      if(subLang){ subLang.value = asrLang; subLang.onchange = e => setAsrLang(e.target.value); }
+      /* 启动即把当前偏好同步给原生层（若已就绪） */
+      if(typeof window.WatersNative.setAsr === 'function'){ try{ window.WatersNative.setAsr(asrOn?'1':'0'); }catch(e){} }
+      if(typeof window.WatersNative.setAsrLang === 'function'){ try{ window.WatersNative.setAsrLang(asrLang); }catch(e){} }
+    }else{
+      subItem.hidden = true;   /* 能力不具备 → 整项隐藏，避免误点 */
+    }
   }
 
   var favBtnEl = $('#favBtn');

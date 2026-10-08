@@ -7,7 +7,9 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.waters.radio"
+        /* v7.0 起独立安装：applicationId 与 v6x（com.waters.radio）不同 → 两个 App 可并存，
+           互不覆盖、互不顶替。namespace 仍为 com.waters.radio（R 类 / JsBridge 全兼容）。 */
+        applicationId "com.waters.radio.v7"
         /* minSdk 14 = Android 4.0（满足「装得上」）。
            ⚠️ 4.0~4.3 的系统 WebView 跑不动现代网页（无 HLS / CSS Grid），
            装上会白屏；实际可用的最低版本是 Android 5.0（API 21）。
@@ -15,8 +17,8 @@ android {
            API 14-20 只有实体键 onKeyDown 兜底。 */
         minSdk 14
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 7
+        versionName "7.0"
     }
 
     signingConfigs {
