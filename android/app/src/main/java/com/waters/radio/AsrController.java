@@ -201,11 +201,13 @@ public class AsrController {
                 decoder.configure(fmt, null, null, 0);
                 decoder.start();
 
-                MediaFormat outFmt = decoder.getOutputFormat();
-                int srcRate = outFmt.containsKey(MediaFormat.KEY_SAMPLE_RATE)
-                    ? outFmt.getInteger(MediaFormat.KEY_SAMPLE_RATE) : 44100;
-                int channels = outFmt.containsKey(MediaFormat.KEY_CHANNEL_COUNT)
-                    ? outFmt.getInteger(MediaFormat.KEY_CHANNEL_COUNT) : 2;
+                /* 源采样率/声道数取自抽取器轨道格式（音频轨道自带，无需等解码器输出格式回调，
+                   避免 start() 后立即 getOutputFormat() 在某些机型上抛 IllegalStateException）。
+                   MediaCodec 音频解码器不重采样，输出率/声道与输入一致。 */
+                int srcRate = fmt.containsKey(MediaFormat.KEY_SAMPLE_RATE)
+                    ? fmt.getInteger(MediaFormat.KEY_SAMPLE_RATE) : 44100;
+                int channels = fmt.containsKey(MediaFormat.KEY_CHANNEL_COUNT)
+                    ? fmt.getInteger(MediaFormat.KEY_CHANNEL_COUNT) : 2;
 
                 Resampler res = new Resampler(srcRate, channels, TARGET_RATE);
                 MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -231,7 +233,7 @@ public class AsrController {
 
                     int outIdx = decoder.dequeueOutputBuffer(info, 2000);
                     if (outIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                        outFmt = decoder.getOutputFormat();
+                        MediaFormat outFmt = decoder.getOutputFormat();   // 仅在此回调内有效
                         srcRate = outFmt.containsKey(MediaFormat.KEY_SAMPLE_RATE) ? outFmt.getInteger(MediaFormat.KEY_SAMPLE_RATE) : srcRate;
                         channels = outFmt.containsKey(MediaFormat.KEY_CHANNEL_COUNT) ? outFmt.getInteger(MediaFormat.KEY_CHANNEL_COUNT) : channels;
                         res = new Resampler(srcRate, channels, TARGET_RATE);
