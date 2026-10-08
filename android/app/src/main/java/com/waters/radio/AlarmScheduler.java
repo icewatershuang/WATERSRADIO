@@ -106,21 +106,55 @@ public class AlarmScheduler {
 
             JSONObject on = o.optJSONObject("powerOn");
             if (on != null && on.optBoolean("on", false)) {
-                long at = nextOccurrence(on.optInt("h", 7), on.optInt("m", 0), null);
+                String mode = on.optString("mode", "single");
+                long at = nextOccurrence(on.optInt("h", 7), on.optInt("m", 0), modeDays(mode));
                 JSONObject payload = new JSONObject();
                 payload.put("action", "poweron");
+                payload.put("mode", mode);
                 setExact(c, at, ID_POWERON, payload.toString());
             }
 
             JSONObject off = o.optJSONObject("powerOff");
             if (off != null && off.optBoolean("on", false)) {
-                long at = nextOccurrence(off.optInt("h", 23), off.optInt("m", 0), null);
+                String mode = off.optString("mode", "single");
+                long at = nextOccurrence(off.optInt("h", 23), off.optInt("m", 0), modeDays(mode));
                 JSONObject payload = new JSONObject();
                 payload.put("action", "poweroff");
+                payload.put("mode", mode);
                 setExact(c, at, ID_POWEROFF, payload.toString());
             }
             Log.i(TAG, "排程完成");
         } catch (Throwable t) { Log.w(TAG, "scheduleAll", t); }
+    }
+
+    /* v61：执行方式 → 重复日期（0=周日…6=周六）。
+       single / daily → 空数组 = 每天（single 的「只执行一次」由触发后关掉开关实现，
+       见 disablePower()，这样网页与原生两边语义一致）。 */
+    private static JSONArray modeDays(String mode) {
+        JSONArray d = new JSONArray();
+        if ("workday".equals(mode)) {
+            int[] wd = {1, 2, 3, 4, 5};
+            for (int x : wd) d.put(x);
+        } else if ("weekend".equals(mode)) {
+            d.put(0); d.put(6);
+        }
+        return d;
+    }
+
+    /* v61：单次执行的自动开关机 —— 触发后在原生保存的 schedule 里关掉开关，
+       scheduleAll() 就不会再续排；网页下次启动消费待触发项时也会同步关掉自己的开关。 */
+    static void disablePower(Context c, boolean powerOn) {
+        try {
+            String raw = loadSchedule(c);
+            if (raw == null || raw.length() == 0) return;
+            JSONObject o = new JSONObject(raw);
+            JSONObject p = o.optJSONObject(powerOn ? "powerOn" : "powerOff");
+            if (p != null) {
+                p.put("on", false);
+                saveSchedule(c, o.toString());
+                Log.i(TAG, (powerOn ? "自动打开" : "自动关闭") + "为单次执行，已触发并自动关闭");
+            }
+        } catch (Throwable t) { Log.w(TAG, "disablePower", t); }
     }
 
     static void cancelAll(Context c) {
