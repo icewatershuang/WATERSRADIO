@@ -243,10 +243,11 @@ public class AsrController {
                     } else if (outIdx >= 0) {
                         java.nio.ByteBuffer outBuf = decoder.getOutputBuffer(outIdx);
                         if (outBuf != null && info.size > 0) {
+                            byte[] pcm;
                             try {
                                 outBuf.position(info.offset);
                                 outBuf.limit(info.offset + info.size);
-                                byte[] pcm = new byte[info.size];
+                                pcm = new byte[info.size];
                                 outBuf.get(pcm);
                             } finally {
                                 decoder.releaseOutputBuffer(outIdx, false);
