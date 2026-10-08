@@ -1,9 +1,6 @@
 package com.waters.radio;
 
 import android.content.Context;
-import android.media.MediaCodec;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
 import android.os.Build;
 import android.util.Log;
 
@@ -20,27 +17,31 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
- * WATERS RADIO · 语音识别字幕（v7.0，离线 Vosk）
+ * WATERS RADIO · 语音识别字幕（v7.1，离线 Vosk）
  * ------------------------------------------------------------------
- * 架构（与 ICY 同样的「并行连接」思路——音频实际由 WebView 的 <audio> 播放，
- * 原生层拿不到 WebView 的解码输出，只能自己再解一路）：
- *   1. 网页打开「语音字幕」→ JsBridge.setAsr("1") → 以当前台 URL 再开一条并行连接；
- *   2. MediaExtractor + MediaCodec 把直播流解码成 16-bit PCM；
- *   3. Java 端重采样 / 下混到 16kHz 单声道（Vosk 要求）；
- *   4. 16kHz 单声道 PCM 逐块喂给 Vosk Recognizer（流式）；
- *   5. partial / final 结果经 service.callAsrJs(text, isFinal) 回传主页字幕层。
+ * v7.0 架构（已废弃）：原生以当前台 URL 再开一条并行连接，MediaExtractor +
+ *            MediaCodec 解码成 PCM 后喂 Vosk。缺点：MediaExtractor 解不了
+ *            HLS(.m3u8)，遇 HLS 弹「该格式暂不支持识别」，且同一台流要下载两遍。
+ * v7.1 架构：音频本来就在 WebView 里播（HLS 经 hls.js/MSE 喂进 <audio>），
+ *            网页从 Web Audio 图直接采 PCM（单声道下混 + 16kHz 重采样），
+ *            经 JsBridge.asrPcm(base64) 推过来 → 队列 → Vosk 流式识别。
+ *            凡网页能播的源（HLS / ICY / https 直连）都支持；字幕与听到的
+ *            是同一路音频，天然同步；也不再双倍消耗流量。
  *
- * 模型：Vosk 离线模型约 40~50MB，不塞进 APK（避免体积爆炸），首次开启时按需下载到
- *       getFilesDir()/vosk/<lang>，之后完全离线。下载中提示，失败则静默关闭本功能。
- * 能力门控：API < 21（Vosk 原生库要求）或低内存设备 → asrAvailable() 返回 false，
- *       网页端「字幕」整项隐藏，不会误触。
+ * 数据流：网页(约 0.25s/包) → asrPcm(base64) → feedPcm → pcmQ(64 包 ≈ 16s)
+ *        → AsrWorker 逐包 acceptWaveForm → partial/final → callAsrJs → 字幕层
  *
- * ⚠️ 仅支持「直连流」（MP3/AAC/OGG 等），与 ICY 一样跳过 HLS(.m3u8) / 播放列表；
- *   MediaExtractor 对 HLS 音频抓取不稳，且 Vosk 不吃压缩流。
+ * 模型：Vosk 离线模型约 40~50MB，不塞进 APK（避免体积爆炸），首次开启时按需
+ *       下载到 getFilesDir()/vosk/<lang>，之后完全离线。下载中提示，失败则
+ *       静默关闭本功能。
+ * 能力门控：API < 21（Vosk 原生库要求）或低内存设备 → asrAvailable() 返回
+ *       false，网页端「字幕」整项隐藏，不会误触。
  */
 public class AsrController {
 
@@ -52,7 +53,7 @@ public class AsrController {
     private static final Map<String, String> MODEL_ZIP = new HashMap<>();
     static {
         MODEL_ZIP.put("en", "vosk-model-small-en-us-0.15.zip");   // 英语（小模型 ~40MB）
-        MODEL_ZIP.put("zh", "vosk-model-small-zh-cn-0.3.zip");   // 中文（小模型 ~40MB）
+        MODEL_ZIP.put("zh", "vosk-model-small-zh-cn-0.3.zip");    // 中文（小模型 ~40MB）
     }
 
     private final RadioPlaybackService service;
@@ -60,9 +61,13 @@ public class AsrController {
 
     private volatile boolean enabled = false;
     private volatile String lang = "en";
-    private volatile String streamUrl = "";
+    private volatile String streamUrl = "";      /* 当前台 URL（仅用于「换台才重置」判断） */
 
-    private volatile DecodeThread decodeThread = null;
+    /* 16kHz 单声道 16-bit PCM 包队列：每包约 0.25s(8000B)，64 包 ≈ 16s 缓冲；
+       满了丢新包（宁可短暂缺字也不撑爆内存）；暂停时网页停止投喂即自然断流 */
+    private final ArrayBlockingQueue<byte[]> pcmQ = new ArrayBlockingQueue<byte[]>(64);
+
+    private volatile AsrWorker worker = null;
     private volatile Model model = null;
     private volatile String modelLang = "";
     private final Object modelLock = new Object();
@@ -85,86 +90,91 @@ public class AsrController {
 
     public void setLang(String l) {
         if (l == null || l.isEmpty()) l = "en";
-        this.lang = MODEL_ZIP.containsKey(l) ? l : "en";
+        String next = MODEL_ZIP.containsKey(l) ? l : "en";
+        boolean changed = !next.equals(lang);
+        lang = next;
+        /* v7.1：播放中切语言 → 重启识别线程换模型（v7.0 只存值不生效，这里顺手修掉） */
+        if (changed && enabled) restartWorker();
     }
 
     public String getLang() { return lang; }
 
-    /* 网页切换开关：on="1" 开启（用当前流地址），on="0" 关闭 */
+    /* 网页切换开关：on=true 开启（PCM 由网页经 asrPcm 持续推来），false 关闭 */
     public synchronized void setEnabled(boolean on, String url) {
         if (on) {
             if (!isAvailable()) { toast("本设备不支持离线语音识别"); return; }
-            if (url != null) this.streamUrl = url;
+            if (url != null && !url.isEmpty()) streamUrl = url;
             enabled = true;
-            startDecode();
+            pcmQ.clear();
+            startWorker();
         } else {
             enabled = false;
-            stopDecode();
+            stopWorker();
         }
     }
 
-    /* 播放站台变化时（onNowPlaying 带新 URL）调用：若已开启则换流重启识别 */
+    /* 播放状态变化时（onNowPlaying 带新 URL）调用：
+       - 真正换了台 → 清残留 + 重开识别（避免上一台的声学状态串台）；
+       - 暂停后恢复（同 URL，每次缓冲恢复都会触发 playing）→ 不重置，继续识别 */
     public synchronized void onStreamChanged(String url) {
         if (url == null || url.isEmpty()) return;
-        if (!enabled) { this.streamUrl = url; return; }
-        if (url.equals(this.streamUrl)) return;
-        this.streamUrl = url;
-        restartDecode();
+        boolean changed = !url.equals(streamUrl);
+        streamUrl = url;
+        if (!enabled || !changed) return;
+        pcmQ.clear();
+        restartWorker();
     }
 
-    /* 停止播放时调用：关掉识别，避免空耗流量与 CPU */
+    /* 暂停/停播时调用：网页已停止投喂，这里只需清掉积压；线程保留空转（开销≈0），
+       恢复播放后网页继续推包即自动续上（v7.0 会整个关掉导致恢复后字幕失活，已修） */
     public synchronized void onPlaybackStopped() {
-        enabled = false;
-        stopDecode();
+        pcmQ.clear();
     }
 
     public synchronized void release() {
         enabled = false;
-        stopDecode();
+        stopWorker();
         synchronized (modelLock) {
             if (model != null) { try { model.close(); } catch (Throwable ignored) {} model = null; }
         }
     }
 
-    /* ---------------- 解码 + 识别线程 ---------------- */
-    private synchronized void startDecode() {
-        if (decodeThread != null && decodeThread.isAlive()) return;
-        if (streamUrl.isEmpty() || !enabled) return;
-        decodeThread = new DecodeThread();
-        decodeThread.start();
+    /* ---------------- PCM 投喂（JsBridge.asrPcm 调入，16kHz 单声道 16-bit） ---------------- */
+    public void feedPcm(byte[] pcm16k) {
+        if (!enabled || pcm16k == null || pcm16k.length == 0) return;
+        pcmQ.offer(pcm16k);   /* 队列满 → 丢包保命，识别短暂缺字 */
+        ensureWorker();
     }
 
-    private synchronized void restartDecode() {
-        stopDecode();
-        if (enabled) startDecode();
+    /* ---------------- 识别线程 ---------------- */
+    private synchronized void startWorker() {
+        if (!enabled) return;
+        if (worker != null && worker.isAlive()) return;
+        worker = new AsrWorker();
+        worker.start();
     }
 
-    private synchronized void stopDecode() {
-        if (decodeThread != null) { decodeThread.requestStop(); decodeThread = null; }
+    private void ensureWorker() {
+        AsrWorker w = worker;
+        if (w == null || !w.isAlive()) startWorker();
     }
 
-    private class DecodeThread extends Thread {
+    private synchronized void restartWorker() {
+        stopWorker();
+        if (enabled) startWorker();
+    }
+
+    private synchronized void stopWorker() {
+        AsrWorker w = worker;
+        worker = null;
+        if (w != null) { w.stop = true; pcmQ.clear(); }
+    }
+
+    private class AsrWorker extends Thread {
         private volatile boolean stop = false;
-        private MediaExtractor extractor;
-        private MediaCodec decoder;
-
-        void requestStop() {
-            stop = true;
-            try { if (extractor != null) extractor.release(); } catch (Throwable ignored) {}
-            try { if (decoder != null) { decoder.stop(); decoder.release(); } } catch (Throwable ignored) {}
-            this.interrupt();
-        }
 
         @Override
         public void run() {
-            String url = streamUrl;
-            /* 与 ICY 一致：跳过 HLS / 播放列表（MediaExtractor 抓其音频不稳，且 Vosk 不吃压缩流） */
-            String u = (url == null ? "" : url.toLowerCase());
-            if (u.contains(".m3u8") || u.contains(".m3u") || u.contains(".pls")) {
-                enabled = false;
-                toast("该格式暂不支持识别（如 HLS 直播）");
-                return;
-            }
             File modelDir = prepareModel(lang);
             if (modelDir == null) { enabled = false; toast("语音模型下载失败，字幕已关闭"); return; }
 
@@ -190,99 +200,19 @@ public class AsrController {
             catch (Throwable t) { enabled = false; toast("语音识别初始化失败"); return; }
 
             try {
-                extractor = new MediaExtractor();
-                extractor.setDataSource(url);
-                int track = pickAudioTrack(extractor);
-                if (track < 0) { enabled = false; toast("该格式暂不支持识别（如 HLS 直播）"); return; }
-                extractor.selectTrack(track);
-                MediaFormat fmt = extractor.getTrackFormat(track);
-                String mime = fmt.getString(MediaFormat.KEY_MIME);
-                decoder = MediaCodec.createDecoderByType(mime);
-                decoder.configure(fmt, null, null, 0);
-                decoder.start();
-
-                /* 源采样率/声道数取自抽取器轨道格式（音频轨道自带，无需等解码器输出格式回调，
-                   避免 start() 后立即 getOutputFormat() 在某些机型上抛 IllegalStateException）。
-                   MediaCodec 音频解码器不重采样，输出率/声道与输入一致。 */
-                int srcRate = fmt.containsKey(MediaFormat.KEY_SAMPLE_RATE)
-                    ? fmt.getInteger(MediaFormat.KEY_SAMPLE_RATE) : 44100;
-                int channels = fmt.containsKey(MediaFormat.KEY_CHANNEL_COUNT)
-                    ? fmt.getInteger(MediaFormat.KEY_CHANNEL_COUNT) : 2;
-
-                Resampler res = new Resampler(srcRate, channels, TARGET_RATE);
-                MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-                boolean inputDone = false;
-
                 while (!stop) {
-                    if (!inputDone) {
-                        int inIdx = decoder.dequeueInputBuffer(2000);
-                        if (inIdx >= 0) {
-                            java.nio.ByteBuffer inBuf = decoder.getInputBuffer(inIdx);
-                            if (inBuf != null) {
-                                int sampleSize = extractor.readSampleData(inBuf, 0);
-                                if (sampleSize < 0) {
-                                    decoder.queueInputBuffer(inIdx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                                    inputDone = true;
-                                } else {
-                                    decoder.queueInputBuffer(inIdx, 0, sampleSize, extractor.getSampleTime(), 0);
-                                    extractor.advance();
-                                }
-                            }
-                        }
-                    }
-
-                    int outIdx = decoder.dequeueOutputBuffer(info, 2000);
-                    if (outIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                        MediaFormat outFmt = decoder.getOutputFormat();   // 仅在此回调内有效
-                        srcRate = outFmt.containsKey(MediaFormat.KEY_SAMPLE_RATE) ? outFmt.getInteger(MediaFormat.KEY_SAMPLE_RATE) : srcRate;
-                        channels = outFmt.containsKey(MediaFormat.KEY_CHANNEL_COUNT) ? outFmt.getInteger(MediaFormat.KEY_CHANNEL_COUNT) : channels;
-                        res = new Resampler(srcRate, channels, TARGET_RATE);
-                        continue;
-                    } else if (outIdx == MediaCodec.INFO_TRY_AGAIN_LATER) {
-                        continue;
-                    } else if (outIdx >= 0) {
-                        java.nio.ByteBuffer outBuf = decoder.getOutputBuffer(outIdx);
-                        if (outBuf != null && info.size > 0) {
-                            byte[] pcm;
-                            try {
-                                outBuf.position(info.offset);
-                                outBuf.limit(info.offset + info.size);
-                                pcm = new byte[info.size];
-                                outBuf.get(pcm);
-                            } finally {
-                                decoder.releaseOutputBuffer(outIdx, false);
-                            }
-                            res.put(pcm);
-                            drainVosk(rec, res);
-                        } else {
-                            decoder.releaseOutputBuffer(outIdx, false);
-                        }
-                    }
-                    /* 直播流断流（inputDone 且无新输出）则退出，等 onStreamChanged 重启 */
-                    if (inputDone) {
-                        int again = decoder.dequeueOutputBuffer(info, 500);
-                        if (again < 0) break;
-                    }
+                    byte[] chunk = pcmQ.poll(250, TimeUnit.MILLISECONDS);
+                    if (chunk == null) continue;   /* 暂停/断流：空转等待，开销≈0 */
+                    try {
+                        boolean isFinal = rec.acceptWaveForm(chunk, chunk.length);
+                        emit(isFinal ? rec.getResult() : rec.getPartialResult(), isFinal);
+                    } catch (Throwable t) { Log.e(TAG, "acceptWaveForm 失败: " + t); }
                 }
-                drainVosk(rec, res);
                 emit(rec.getFinalResult(), true);
             } catch (Throwable t) {
-                Log.e(TAG, "解码/识别异常: " + t);
+                Log.e(TAG, "识别线程异常: " + t);
             } finally {
-                try { if (decoder != null) { decoder.stop(); decoder.release(); } } catch (Throwable ignored) {}
-                try { if (extractor != null) extractor.release(); } catch (Throwable ignored) {}
                 try { rec.close(); } catch (Throwable ignored) {}
-            }
-        }
-
-        private void drainVosk(Recognizer rec, Resampler res) {
-            while (res.hasData()) {
-                byte[] chunk = res.take(8000);   // 0.5s @16k
-                if (chunk == null) break;
-                try {
-                    boolean isFinal = rec.acceptWaveForm(chunk, chunk.length);
-                    emit(isFinal ? rec.getResult() : rec.getPartialResult(), isFinal);
-                } catch (Throwable t) { Log.e(TAG, "acceptWaveform 失败: " + t); }
             }
         }
     }
@@ -368,65 +298,4 @@ public class AsrController {
     }
 
     private void toast(String msg) { service.callAsrToast(msg); }
-
-    /* 选第一个 audio/* 轨道；跳过 HLS/播放列表（返回 -1 让上层提示不支持） */
-    private static int pickAudioTrack(MediaExtractor ex) {
-        int n = ex.getTrackCount();
-        for (int i = 0; i < n; i++) {
-            MediaFormat f = ex.getTrackFormat(i);
-            String mime = f.getString(MediaFormat.KEY_MIME);
-            if (mime != null && mime.startsWith("audio/")) return i;
-        }
-        return -1;
-    }
-
-    /* ---------------- 重采样 / 下混：任意采样率+声道 → 16kHz 单声道 ---------------- */
-    private static class Resampler {
-        private final int srcRate, channels, dstRate;
-        private final java.io.ByteArrayOutputStream acc = new java.io.ByteArrayOutputStream();
-        private double pos = 0.0;
-        private double lastSample = 0.0;
-
-        Resampler(int srcRate, int channels, int dstRate) {
-            this.srcRate = srcRate; this.channels = Math.max(1, channels); this.dstRate = dstRate;
-        }
-
-        /* 输入：解码出的 16-bit 交织 PCM（channels 个声道），转成目标 16kHz 单声道并缓存 */
-        synchronized void put(byte[] pcm16) {
-            int samples = pcm16.length / 2 / channels;
-            for (int i = 0; i < samples; i++) {
-                int mono = 0;
-                for (int ch = 0; ch < channels; ch++) {
-                    int off = (i * channels + ch) * 2;
-                    short s = (short) ((pcm16[off] & 0xff) | ((pcm16[off + 1] & 0xff) << 8));
-                    mono += s;
-                }
-                mono /= channels;
-                double cur = mono;
-                double step = (double) dstRate / srcRate;
-                while (pos < i + 1) {
-                    double frac = pos - i;
-                    double v = (i == 0) ? cur : (lastSample + (cur - lastSample) * Math.max(0, Math.min(1, frac)));
-                    short out = (short) Math.max(-32768, Math.min(32767, v));
-                    acc.write(out & 0xff); acc.write((out >> 8) & 0xff);
-                    pos += step;
-                }
-                lastSample = cur;
-            }
-        }
-
-        synchronized boolean hasData() { return acc.size() > 0; }
-
-        /* 取出最多 maxBytes（对齐到偶数）字节的 16kHz 单声道 PCM */
-        synchronized byte[] take(int maxBytes) {
-            byte[] all = acc.toByteArray();
-            if (all.length == 0) return null;
-            int n = Math.min(all.length, maxBytes - (maxBytes % 2));
-            byte[] out = new byte[n];
-            System.arraycopy(all, 0, out, 0, n);
-            acc.reset();
-            if (n < all.length) acc.write(all, n, all.length - n);
-            return out;
-        }
-    }
 }

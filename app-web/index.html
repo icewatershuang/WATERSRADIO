@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v7.0</title>
+<title>WATERS RADIO · v7.1</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -3815,38 +3815,46 @@ function updateBtn(){
 let vizRAF=null, audioCtx=null, analyser=null, source=null;
 let eqLow=null, eqHigh=null, eqMid=null, levelGain=null, limiter=null, masterGain=null, tdata=null;
 
+function ensureAudioGraph(){
+  /* v7.1：从 startViz 抽出音频图初始化，供频谱与「语音字幕 PCM 直采」共用。
+     createMediaElementSource 一生只能调一次，两处必须共用同一个 audioCtx/source。 */
+  if(audioCtx) return true;
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    source = audioCtx.createMediaElementSource(audio);
+
+    // —— 调音台处理链：EQ(低切/空气感/中频 presence) → 自动电平 → 频谱 → 透明限制器 → 主音量 → 输出 ——
+    eqLow  = audioCtx.createBiquadFilter(); eqLow.type='lowshelf';  eqLow.frequency.value=120;    eqLow.gain.value=0;
+    eqHigh = audioCtx.createBiquadFilter(); eqHigh.type='highshelf'; eqHigh.frequency.value=8000;  eqHigh.gain.value=0;
+    eqMid  = audioCtx.createBiquadFilter(); eqMid.type='peaking';    eqMid.frequency.value=2500;   eqMid.Q.value=1.0; eqMid.gain.value=0;
+
+    levelGain = audioCtx.createGain(); levelGain.gain.value = 1;     // 自动电平匹配（响度归一）
+
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;                // 提高频率分辨率（binHz≈43Hz），低频段才分得开
+    analyser.smoothingTimeConstant = 0.80;  // 底层平滑（v43: 0.75→0.80，动态更绵软朦胧）
+
+    // 透明防破音限制器：阈值 -1dBFS、比率 20:1、零 knee，仅在接近削顶时起作用，正常听感无染色
+    limiter = audioCtx.createDynamicsCompressor();
+    limiter.threshold.value = -1.0; limiter.knee.value = 0; limiter.ratio.value = 20;
+    limiter.attack.value = 0.003; limiter.release.value = 0.1;
+
+    masterGain = audioCtx.createGain(); masterGain.gain.value = masterVol; // 整体主音量（替代 audio.volume）
+
+    // 链路：source → eqLow → eqHigh → eqMid → levelGain → analyser → limiter → masterGain → destination
+    source.connect(eqLow); eqLow.connect(eqHigh); eqHigh.connect(eqMid);
+    eqMid.connect(levelGain); levelGain.connect(analyser); analyser.connect(limiter);
+    limiter.connect(masterGain); masterGain.connect(audioCtx.destination);
+
+    audio.volume = 1;                         // 元素音量交还给 masterGain，避免重复衰减
+    applyEqPreset(eqPreset);                  // 套用已保存的音色预设
+    return true;
+  }catch(e){ return false; }
+}
+
 function startViz(){
   try{
-    if(!audioCtx){
-      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-      source = audioCtx.createMediaElementSource(audio);
-
-      // —— 调音台处理链：EQ(低切/空气感/中频 presence) → 自动电平 → 频谱 → 透明限制器 → 主音量 → 输出 ——
-      eqLow  = audioCtx.createBiquadFilter(); eqLow.type='lowshelf';  eqLow.frequency.value=120;    eqLow.gain.value=0;
-      eqHigh = audioCtx.createBiquadFilter(); eqHigh.type='highshelf'; eqHigh.frequency.value=8000;  eqHigh.gain.value=0;
-      eqMid  = audioCtx.createBiquadFilter(); eqMid.type='peaking';    eqMid.frequency.value=2500;   eqMid.Q.value=1.0; eqMid.gain.value=0;
-
-      levelGain = audioCtx.createGain(); levelGain.gain.value = 1;     // 自动电平匹配（响度归一）
-
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 1024;                // 提高频率分辨率（binHz≈43Hz），低频段才分得开
-      analyser.smoothingTimeConstant = 0.80;  // 底层平滑（v43: 0.75→0.80，动态更绵软朦胧）
-
-      // 透明防破音限制器：阈值 -1dBFS、比率 20:1、零 knee，仅在接近削顶时起作用，正常听感无染色
-      limiter = audioCtx.createDynamicsCompressor();
-      limiter.threshold.value = -1.0; limiter.knee.value = 0; limiter.ratio.value = 20;
-      limiter.attack.value = 0.003; limiter.release.value = 0.1;
-
-      masterGain = audioCtx.createGain(); masterGain.gain.value = masterVol; // 整体主音量（替代 audio.volume）
-
-      // 链路：source → eqLow → eqHigh → eqMid → levelGain → analyser → limiter → masterGain → destination
-      source.connect(eqLow); eqLow.connect(eqHigh); eqHigh.connect(eqMid);
-      eqMid.connect(levelGain); levelGain.connect(analyser); analyser.connect(limiter);
-      limiter.connect(masterGain); masterGain.connect(audioCtx.destination);
-
-      audio.volume = 1;                         // 元素音量交还给 masterGain，避免重复衰减
-      applyEqPreset(eqPreset);                  // 套用已保存的音色预设
-    }
+    if(!ensureAudioGraph()) return;
     const c = $('#viz'); const ctx = c.getContext('2d');
     const data = new Uint8Array(analyser.frequencyBinCount);
 
@@ -4079,6 +4087,9 @@ function setAutoLevel(on){
       try{ window.WatersNative.setAsr(asrOn ? '1':'0'); }catch(e){}
     }
     if(!asrOn) renderSubtitle('');   /* 关掉立即清屏 */
+    /* v7.1：开→（若正在播）接管 PCM 采集；关→停采 */
+    if(asrOn){ if(audio && !audio.paused) asrTapStart(); }
+    else asrTapStop();
   }
   function setAsrLang(lang){
     asrLang = lang || 'en';
@@ -4088,6 +4099,79 @@ function setAutoLevel(on){
       try{ window.WatersNative.setAsrLang(asrLang); }catch(e){}
     }
   }
+
+  /* ===== v7.1：语音字幕 PCM 直采（HLS 也能识别了）=====
+     v7.0 原生另开一路并行流自行解码，HLS(.m3u8) 解不了 → 弹「该格式暂不支持识别」。
+     v7.1 改从 Web Audio 图直接采 PCM：HLS 经 hls.js/MSE 喂进 <audio>，
+     MediaElementSource 一定采得到 → 单声道下混 → 16kHz 重采样 → 16-bit PCM，
+     base64 过桥（WatersNative.asrPcm）送原生 Vosk 流式识别。
+     凡网页能播的源（HLS / ICY / https 直连）都支持；字幕与耳朵听到的是同一路
+     音频，天然同步；也不再双倍消耗流量。 */
+  var asrTap = null;   // {proc, mute, mono, p, prev, acc, accLen}
+  function asrTapStart(){
+    if(asrTap) return;
+    if(!asrAvailable() || typeof window.WatersNative.asrPcm !== 'function') return;
+    try{
+      if(!ensureAudioGraph()) return;
+      if(audioCtx.state === 'suspended' && audioCtx.resume){
+        var r = audioCtx.resume(); if(r && r.catch) r.catch(function(){});
+      }
+      var proc = audioCtx.createScriptProcessor(4096, 1, 1);
+      var mute = audioCtx.createGain(); mute.gain.value = 0;   // 只为拉动处理链，不出声
+      source.connect(proc); proc.connect(mute); mute.connect(audioCtx.destination);
+      var T = asrTap = { proc:proc, mute:mute, mono:new Float32Array(8192),
+                         p:0, prev:0, acc:new Int16Array(8192), accLen:0 };
+      proc.onaudioprocess = function(ev){
+        var t = asrTap; if(!t || !asrOn) return;
+        var ib = ev.inputBuffer, n = ib.length;
+        var a = ib.getChannelData(0);
+        var b = ib.numberOfChannels > 1 ? ib.getChannelData(1) : null;
+        var inp = t.mono;
+        for(var i=0;i<n;i++) inp[i] = b ? (a[i]+b[i])*0.5 : a[i];
+        var step = audioCtx.sampleRate / 16000;    // 每个输出样本跨过的输入样本数
+        var p = t.p, prev = t.prev;
+        while(p < n - 1){
+          var idx = Math.floor(p), frac = p - idx;
+          var s0 = (idx < 0) ? prev : inp[idx];
+          var v = s0 + (inp[idx+1] - s0) * frac;
+          if(!isFinite(v)) v = 0;
+          t.acc[t.accLen++] = v < 0 ? Math.max(-32768, v*32768) : Math.min(32767, v*32767);
+          p += step;
+          if(t.accLen >= t.acc.length) asrTapSend(t);
+        }
+        t.p = p - n; t.prev = inp[n-1];   // 跨缓冲区的分数位置留给下一包
+        if(t.accLen) asrTapSend(t);       // 尾包（不足整段也发，避免句尾延迟）
+      };
+    }catch(e){ asrTap = null; }
+  }
+  function asrTapSend(t){
+    if(!t.accLen) return;
+    var n = t.accLen; t.accLen = 0;
+    var bytes = new Uint8Array(t.acc.buffer, 0, n*2);
+    var bin = '';
+    for(var i=0;i<n*2;i+=4096){
+      var end = Math.min(i+4096, n*2);
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, end));
+    }
+    try{ window.WatersNative.asrPcm(btoa(bin)); }catch(e){}
+  }
+  function asrTapStop(){
+    var t = asrTap; if(!t) return;
+    asrTap = null;
+    try{ t.proc.onaudioprocess = null; }catch(e){}
+    try{ if(source) source.disconnect(t.proc); }catch(e){}
+    try{ t.proc.disconnect(); t.mute.disconnect(); }catch(e){}
+  }
+  /* v7.1：播放状态联动 —— 开播接管采集，暂停/播完即停（省电，也避免静音段污染识别） */
+  audio.addEventListener('playing', function(){ if(asrOn) asrTapStart(); });
+  audio.addEventListener('pause',   function(){ asrTapStop(); });
+  audio.addEventListener('ended',   function(){ asrTapStop(); });
+  /* 供自检脚本探测（只暴露布尔态与计数，不泄漏音频数据） */
+  window.__asrTapState = function(){
+    return { tap: !!asrTap, on: asrOn, graph: !!audioCtx,
+             rate: audioCtx ? audioCtx.sampleRate : 0 };
+  };
+
 function setVolume(v){    // v: 0~1
   masterVol = Math.max(0, Math.min(1, v));
   saveStr(LS.vol, String(masterVol));

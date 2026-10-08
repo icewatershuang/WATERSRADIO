@@ -471,10 +471,11 @@ public class RadioPlaybackService extends Service {
             try { MainActivity.setImmersiveMode("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
         }
 
-        /* ---- v7.0：语音识别字幕（离线 Vosk）----
-           网页「语音字幕」开关 / 语言选择 → 原生启动并行解码 + Vosk 识别，
-           结果经 window.__onAsr 回传主页字幕层。能力不满足时 asrAvailable() 返回 false，
-           网页端整项隐藏。 */
+        /* ---- v7.0/v7.1：语音识别字幕（离线 Vosk）----
+           网页「语音字幕」开关 / 语言选择 → 原生启动识别线程，结果经 window.__onAsr
+           回传主页字幕层。能力不满足时 asrAvailable() 返回 false，网页端整项隐藏。
+           v7.1 起 PCM 不再由原生另开一路解码（HLS 解不了），改由网页从 Web Audio
+           图直采（16kHz 单声道 16-bit），经 asrPcm(base64) 推入 → Vosk 流式识别。 */
         @android.webkit.JavascriptInterface
         public boolean asrAvailable() {
             return sInstance != null && sInstance.asr != null && sInstance.asr.isAvailable();
@@ -491,6 +492,18 @@ public class RadioPlaybackService extends Service {
         @android.webkit.JavascriptInterface
         public void setAsrLang(String lang) {
             if (sInstance != null && sInstance.asr != null) sInstance.asr.setLang(lang);
+        }
+
+        /* ---- v7.1：网页直采 PCM（16kHz 单声道 16-bit，base64）喂给 Vosk ----
+           HLS 经 hls.js/MSE 在 WebView 内解码，原生无法另解一路；改由网页把
+           MediaElementSource 采到的 PCM 经桥送入，凡网页能播的源都支持识别。 */
+        @android.webkit.JavascriptInterface
+        public void asrPcm(String b64) {
+            if (sInstance == null || sInstance.asr == null || b64 == null || b64.isEmpty()) return;
+            try {
+                byte[] pcm = android.util.Base64.decode(b64, android.util.Base64.DEFAULT);
+                sInstance.asr.feedPcm(pcm);
+            } catch (Throwable ignored) {}
         }
 
         /* JsBridge 是无 Context 的静态类：优先用 Service 自己，其次 MainActivity */
