@@ -444,7 +444,7 @@ public class RadioPlaybackService extends Service {
            实际窗口操作在 MainActivity（UI 线程、持有 Window）里执行。 */
         @android.webkit.JavascriptInterface
         public void setImmersive(String on) {
-            try { MainActivity.setImmersive("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
+            try { MainActivity.setImmersiveMode("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
         }
 
         /* JsBridge 是无 Context 的静态类：优先用 Service 自己，其次 MainActivity */
