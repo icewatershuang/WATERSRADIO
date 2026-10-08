@@ -439,6 +439,14 @@ public class RadioPlaybackService extends Service {
             try { MainActivity.finishIfRunning(); } catch (Throwable ignored) {}
         }
 
+        /* ---- v60：全屏显示（隐藏状态栏，内容铺满整屏）----
+           网页设置里打开「全屏显示」后调 setImmersive("1")，关闭调 "0"。
+           实际窗口操作在 MainActivity（UI 线程、持有 Window）里执行。 */
+        @android.webkit.JavascriptInterface
+        public void setImmersive(String on) {
+            try { MainActivity.setImmersive("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
+        }
+
         /* JsBridge 是无 Context 的静态类：优先用 Service 自己，其次 MainActivity */
         private static android.content.Context ctx() {
             if (sAppContext != null) return sAppContext;
