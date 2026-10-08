@@ -42,6 +42,35 @@ jobs:
           mkdir -p android/app/src/main/assets
           cp app-web/index.html app-web/hls.min.js app-web/version.txt android/app/src/main/assets/
 
+      # v7.2：语音模型随 APK 内置（assets/vosk/*.zip，英/中两个小模型）。
+      # 装上即有、开字幕不联网——v7.1 及之前首次开启要连 alphacephei.com 下载
+      # 约 40MB，网络不通的用户会弹「语音模型下载失败，字幕已关闭」。
+      # CI 下载这两个 zip 只需几秒；用 cache 缓存避免每次构建重复下载。
+      - name: Cache Vosk models
+        uses: actions/cache@v4
+        with:
+          path: android/app/src/main/assets/vosk
+          key: vosk-models-small-en-us-0.15-zh-cn-0.3
+
+      - name: Bundle Vosk speech models (built-in, no download at runtime)
+        run: |
+          mkdir -p android/app/src/main/assets/vosk
+          cd android/app/src/main/assets/vosk
+          for f in vosk-model-small-en-us-0.15.zip vosk-model-small-zh-cn-0.3.zip; do
+            if [ ! -s "$f" ]; then
+              echo "Downloading $f ..."
+              curl -fL --retry 5 --retry-delay 5 -o "$f" "https://alphacephei.com/vosk/models/$f"
+            else
+              echo "Cached: $f ($(stat -c%s "$f") bytes)"
+            fi
+          done
+          ls -la
+          # 完整性粗检：两个小模型都应 >30MB
+          for f in *.zip; do
+            s=$(stat -c%s "$f")
+            if [ "$s" -lt 30000000 ]; then echo "MODEL TOO SMALL: $f ($s bytes)"; exit 1; fi
+          done
+
       - name: Build Debug APK (auto-signed)
         uses: gradle/gradle-build-action@v3
         with:

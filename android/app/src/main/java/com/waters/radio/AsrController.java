@@ -10,6 +10,7 @@ import org.vosk.Recognizer;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,7 +24,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
- * WATERS RADIO · 语音识别字幕（v7.1，离线 Vosk）
+ * WATERS RADIO · 语音识别字幕（v7.2，离线 Vosk，模型内置）
  * ------------------------------------------------------------------
  * v7.0 架构（已废弃）：原生以当前台 URL 再开一条并行连接，MediaExtractor +
  *            MediaCodec 解码成 PCM 后喂 Vosk。缺点：MediaExtractor 解不了
@@ -37,9 +38,10 @@ import java.util.zip.ZipInputStream;
  * 数据流：网页(约 0.25s/包) → asrPcm(base64) → feedPcm → pcmQ(64 包 ≈ 16s)
  *        → AsrWorker 逐包 acceptWaveForm → partial/final → callAsrJs → 字幕层
  *
- * 模型：Vosk 离线模型约 40~50MB，不塞进 APK（避免体积爆炸），首次开启时按需
- *       下载到 getFilesDir()/vosk/<lang>，之后完全离线。下载中提示，失败则
- *       静默关闭本功能。
+ * 模型：v7.2 起随 APK 内置（assets/vosk/*.zip，英/中两个小模型），首次开启时
+ *       解压到 getFilesDir()/vosk/<lang>，之后完全离线；**开箱即用，不联网**。
+ *       （v7.0/v7.1 曾靠首次联网下载，用户网络到 alphacephei 不通 →
+ *       「语音模型下载失败，字幕已关闭」。联网下载仅保留作 assets 缺失时的兜底。）
  * 能力门控：API < 21（Vosk 原生库要求）或低内存设备 → asrAvailable() 返回
  *       false，网页端「字幕」整项隐藏，不会误触。
  */
@@ -176,7 +178,7 @@ public class AsrController {
         @Override
         public void run() {
             File modelDir = prepareModel(lang);
-            if (modelDir == null) { enabled = false; toast("语音模型下载失败，字幕已关闭"); return; }
+            if (modelDir == null) { enabled = false; toast("语音模型准备失败，字幕已关闭"); return; }
 
             Model m;
             synchronized (modelLock) {
@@ -226,7 +228,10 @@ public class AsrController {
         service.callAsrJs(text, isFinal);
     }
 
-    /* ---------------- 模型准备（下载 + 解压 + 定位） ---------------- */
+    /* ---------------- 模型准备（内置 assets 优先 → 联网兜底 + 解压 + 定位） ----------------
+       v7.2：模型 zip 随 APK 打包在 assets/vosk/，首次开启直接解压，全程离线、
+       开箱即用（v7.1 及之前靠联网下载，网络不通的用户会「语音模型下载失败」）。
+       联网下载仅保留为 assets 缺失时的兜底（如未来出精简版未内置某语言）。 */
     private File prepareModel(String l) {
         File base = new File(appContext.getFilesDir(), "vosk");
         File langDir = new File(base, l);
@@ -234,11 +239,30 @@ public class AsrController {
         if (existing != null) return existing;
         String zipName = MODEL_ZIP.get(l);
         if (zipName == null) return null;
+
+        /* ① 内置模型：assets/vosk/<zip> → 解压到 filesDir/vosk/<lang> */
+        InputStream ain = null;
+        try { ain = appContext.getAssets().open("vosk/" + zipName); } catch (Throwable t) { ain = null; }
+        if (ain != null) {
+            try {
+                toast("正在解压内置语音模型（仅首次，约 40MB）…");
+                unzip(ain, langDir);
+                File r = findModelDir(langDir);
+                if (r != null) return r;
+            } catch (Throwable t) {
+                Log.e(TAG, "内置模型解压失败: " + t);
+            } finally {
+                try { ain.close(); } catch (Throwable ignored) {}
+            }
+        }
+
+        /* ② 兜底：assets 里没有该模型时才联网下载（老版本升级 / 精简包场景） */
         toast("正在下载离线语音模型（约 40MB，仅首次）…");
         File zip = new File(base, zipName);
         try {
             download(new URL(MODEL_BASE_URL + zipName), zip);
-            unzip(zip, langDir);
+            FileInputStream fin = new FileInputStream(zip);
+            try { unzip(fin, langDir); } finally { try { fin.close(); } catch (Throwable ignored) {} }
             zip.delete();
             return findModelDir(langDir);
         } catch (Throwable t) {
@@ -280,9 +304,9 @@ public class AsrController {
         fos.close(); in.close(); c.disconnect();
     }
 
-    private void unzip(File zip, File destDir) throws IOException {
+    private void unzip(InputStream in, File destDir) throws IOException {
         destDir.mkdirs();
-        ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new java.io.FileInputStream(zip)));
+        ZipInputStream zis = new ZipInputStream(new BufferedInputStream(in));
         ZipEntry e;
         byte[] buf = new byte[8192];
         while ((e = zis.getNextEntry()) != null) {
