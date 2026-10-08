@@ -42,12 +42,28 @@ public class AlarmReceiver extends BroadcastReceiver {
         AlarmScheduler.savePending(context, payload);
 
         if ("poweroff".equals(action)) {
+            /* v61：单次执行的自动关机 —— 触发后关掉开关，scheduleAll 不再续排 */
+            try {
+                org.json.JSONObject p = new org.json.JSONObject(payload);
+                if ("single".equals(p.optString("mode", "single"))) {
+                    AlarmScheduler.disablePower(context, false);
+                }
+            } catch (Throwable ignored) {}
             /* 自动关机：停止播放服务 + 结束页面，不再强行唤醒界面 */
             try { context.stopService(new Intent(context, RadioPlaybackService.class)); } catch (Throwable ignored) {}
             try {
                 MainActivity.finishIfRunning();
             } catch (Throwable ignored) {}
         } else {
+            if ("poweron".equals(action)) {
+                /* v61：单次执行的自动开机 —— 触发后关掉开关，scheduleAll 不再续排 */
+                try {
+                    org.json.JSONObject p = new org.json.JSONObject(payload);
+                    if ("single".equals(p.optString("mode", "single"))) {
+                        AlarmScheduler.disablePower(context, true);
+                    }
+                } catch (Throwable ignored) {}
+            }
             /* 闹钟 / 自动开机：短暂点亮屏幕，再拉起服务与界面 */
             wakeScreen(context);
             Intent svc = new Intent(context, RadioPlaybackService.class);
