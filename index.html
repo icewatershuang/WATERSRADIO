@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v61</title>
+<title>WATERS RADIO · v62</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -5763,9 +5763,11 @@ document.addEventListener('DOMContentLoaded', init);
     schedLog('自动关闭时间到点，已停止播放并待机');
   }
 
-  /* ---- 播放时长（睡眠定时） ---- */
-  var sleepDeadline = 0;     // 0 = 未计时
-  var sleepRemain = 0;       // 暂停时保留的剩余毫秒
+  /* ---- 播放时长（睡眠定时）—— 绝对计时 ----
+     关键语义（用户要求）：一旦按「设置」起算，倒计时按真实墙钟时间进行，
+     无论当前是播放还是暂停都不冻结；时间一到强制停止播放。暂停不再保留剩余时间。 */
+  var sleepDeadline = 0;     // 0 = 未计时；非 0 = 绝对到期时间戳（墙钟）
+  var sleepFired = false;    // 已到点（需重新设置才会再次计时）
 
   function fmtLeft(ms){
     var s = Math.max(0, Math.round(ms/1000));
@@ -5778,31 +5780,30 @@ document.addEventListener('DOMContentLoaded', init);
     if(sleepDeadline){
       el.hidden = false;
       el.textContent = '⏳ 剩余 ' + fmtLeft(sleepDeadline - Date.now());
-    }else if(sleepRemain > 0){
-      el.hidden = false;
-      el.textContent = '⏸ 剩余 ' + fmtLeft(sleepRemain);
     }else{
       el.hidden = true;
       el.textContent = '';
     }
   }
   function startSleepTimer(){
-    if(!sched || !sched.sleepMin || sched.sleepMin <= 0){ sleepDeadline = 0; sleepRemain = 0; updateTimerBadge(); return; }
-    sleepDeadline = Date.now() + (sleepRemain > 0 ? sleepRemain : sched.sleepMin * 60000);
-    sleepRemain = 0;
+    // 绝对计时：仅在「尚未起算」且「未到点」时按当前设置起算一次，之后不被播放/暂停重置或重算
+    if(!sched || !sched.sleepMin || sched.sleepMin <= 0) return;
+    if(sleepFired) return;
+    if(sleepDeadline) return;
+    sleepDeadline = Date.now() + sched.sleepMin * 60000;
     updateTimerBadge();
   }
   function pauseSleepTimer(){
-    if(sleepDeadline){ sleepRemain = Math.max(0, sleepDeadline - Date.now()); sleepDeadline = 0; }
-    updateTimerBadge();
+    // v62：暂停不再冻结计时（绝对权限）—— 计时继续按真实时间倒数，开关照常保留
+    return;
   }
-  function resetSleepTimer(){ sleepDeadline = 0; sleepRemain = 0; updateTimerBadge(); }
+  function resetSleepTimer(){ sleepDeadline = 0; sleepFired = false; updateTimerBadge(); }
   function checkSleepTimer(){
     if(sleepDeadline && Date.now() >= sleepDeadline){
-      sleepDeadline = 0; sleepRemain = 0;
+      sleepDeadline = 0; sleepFired = true;
       try{
         var el = getAudio();
-        if(el && !el.paused) el.pause();
+        if(el && !el.paused) el.pause();   // 到点强制停止（正在播放则暂停；已暂停即已停止）
       }catch(e){}
       updateTimerBadge();
       toast('已到设定的播放时长，播放已停止');
@@ -5885,8 +5886,9 @@ document.addEventListener('DOMContentLoaded', init);
       }
       sched.sleepCustom = sched.sleepMin;
       saveSched();
-      resetSleepTimer();
-      toast(sched.sleepMin ? ('播放时长：' + sched.sleepMin + ' 分钟') : '播放时长：不限');
+      if(sched.sleepMin > 0){ sleepFired = false; startSleepTimer(); }   // 设定即按真实时间起算（绝对计时）
+      else { resetSleepTimer(); }
+      toast(sched.sleepMin ? ('播放时长：' + sched.sleepMin + ' 分钟（开始计时）') : '播放时长：不限');
     }
     if(sel){
       var cur = sched.sleepMin || 0;
