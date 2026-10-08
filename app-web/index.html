@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v7.2</title>
+<title>WATERS RADIO · v7.2.1</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -4712,20 +4712,26 @@ function bind(){
 
   /* ---------- v7.0：语音字幕（仅支持的设备显示开关；由 APK 经 Vosk 提供识别） ---------- */
   const subItem = document.getElementById('subtitleItem');
-  if(subItem){
+  /* v7.2.1 修复：能力探测（asrAvailable）依赖原生桥就绪，而桥在 RadioPlaybackService
+     的 asr 对象创建后才可用；页面启动初始化时该桥常未就绪 → 探测返回 false → 整项
+     被永久隐藏。改为「启动 + 每次打开设置」都复查，等桥就绪后（打开设置时必已就绪）
+     即可正确显示。设备确实不达标（API<21 或低内存）时仍隐藏，属正确行为。 */
+  function syncSubtitleAvailability(){
+    if(!subItem) return;
     if(asrAvailable()){
       subItem.hidden = false;
       const subCb = document.getElementById('subtitleSw');
       if(subCb){ subCb.checked = asrOn; subCb.onchange = e => setAsr(e.target.checked); }
       const subLang = document.getElementById('subtitleLang');
       if(subLang){ subLang.value = asrLang; subLang.onchange = e => setAsrLang(e.target.value); }
-      /* 启动即把当前偏好同步给原生层（若已就绪） */
+      /* 把当前偏好同步给原生层（若已就绪） */
       if(typeof window.WatersNative.setAsr === 'function'){ try{ window.WatersNative.setAsr(asrOn?'1':'0'); }catch(e){} }
       if(typeof window.WatersNative.setAsrLang === 'function'){ try{ window.WatersNative.setAsrLang(asrLang); }catch(e){} }
     }else{
       subItem.hidden = true;   /* 能力不具备 → 整项隐藏，避免误点 */
     }
   }
+  syncSubtitleAvailability();
 
   var favBtnEl = $('#favBtn');
   if(favBtnEl) favBtnEl.onclick = ()=> state.current && toggleFav(state.current);
@@ -4733,6 +4739,7 @@ function bind(){
   const openSettings = ()=>{
     $('#settingsOverlay').classList.add('open');
     $('#settingsModal').classList.add('open');
+    syncSubtitleAvailability();   /* v7.2.1：打开设置时复查语音字幕能力，避免启动期桥未就绪导致整项被永久隐藏 */
   };
   const closeSettings = ()=>{
     $('#settingsOverlay').classList.remove('open');
