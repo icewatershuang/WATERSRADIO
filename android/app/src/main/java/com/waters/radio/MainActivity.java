@@ -135,6 +135,49 @@ public class MainActivity extends Activity {
     }
 
     /* ------------------------------------------------------------
+     * v60：全屏显示（隐藏状态栏，内容铺满整屏，连状态栏也盖掉）
+     * 网页设置「全屏显示」开关 → JsBridge.setImmersive → 这里在 UI 线程执行。
+     * · API 30+：WindowInsetsController 隐藏 statusBars，滑动临时呼出；
+     * · API 16~29：systemUiVisibility 沉浸式标记；
+     * · API 14~15：FLAG_FULLSCREEN 窗口标记兜底。
+     * ---------------------------------------------------------- */
+    static void setImmersive(final boolean on) {
+        if (instance == null) return;
+        instance.runOnUiThread(() -> applyImmersive(instance, on));
+    }
+
+    static void applyImmersive(final Activity act, final boolean on) {
+        try {
+            final android.view.Window w = act.getWindow();
+            if (Build.VERSION.SDK_INT >= 30) {
+                android.view.WindowInsetsController c = w.getInsetsController();
+                if (c != null) {
+                    if (on) {
+                        c.hide(android.view.WindowInsets.Type.statusBars());
+                        c.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                    } else {
+                        c.show(android.view.WindowInsets.Type.statusBars());
+                    }
+                }
+            } else if (Build.VERSION.SDK_INT >= 16) {
+                android.view.View decor = w.getDecorView();
+                final int base = android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+                decor.setSystemUiVisibility(on
+                        ? base | android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
+                        : base);
+            } else {
+                if (on) {
+                    w.setFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                } else {
+                    w.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                }
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    /* ------------------------------------------------------------
      * 通知栏媒体按钮的点击（PendingIntent → 本 Activity 特殊 Intent）
      * ---------------------------------------------------------- */
     @Override
