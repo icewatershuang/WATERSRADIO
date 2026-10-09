@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v7.6</title>
+<title>WATERS RADIO · v7.7</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1528,10 +1528,11 @@
     .lcd-clock{align-self:stretch;justify-content:flex-end}
     /* v53：去掉 v51 的电平柱后，左列只剩圆盘——改为整行垂直居中，避免圆盘上方/下方出现空带 */
     .screen-left{align-self:center}
-    /* v7.6：ICY 两行块绝对定位于 .screen-row 内 —— 右缘收到时钟块左缘外 10px、
-       底边与日期底边同一水平线、左缘让开圆盘（三要素由 layoutIcyInset() 实测注入），
-       填充时钟左侧留白，不再另起一行（用户实测定稿） */
-    .np-icy{position:absolute;left:var(--icy-left,72px);right:var(--icy-inset,10px);bottom:var(--icy-bottom,0px);width:auto;z-index:5}
+    /* v7.6→v7.7：ICY 两行块绝对定位于 .screen-row 内 —— 右缘收到时钟块左缘外 10px、
+       底边与日期底边同一水平线；v7.7 左缘放宽到行左缘（文字右对齐贴时钟，
+       长曲目利用台名下方空带不再过早截断；圆盘可能侵入时由 JS 回退让盘），
+       三要素由 layoutIcyInset() 实测注入，不再另起一行（用户实测定稿） */
+    .np-icy{position:absolute;left:var(--icy-left,0px);right:var(--icy-inset,10px);bottom:var(--icy-bottom,0px);width:auto;z-index:5;text-align:right}
     .np-icy.show{display:block}
     .np-marquee.show{display:none}
     /* v7.6：字幕带高度改为内容自适应（竖屏只含语音字幕一行），不再预留固定空带；
@@ -4105,9 +4106,12 @@ function setAutoLevel(on){
     return !!(window.WatersNative && typeof window.WatersNative.asrAvailable === 'function'
       && window.WatersNative.asrAvailable());
   }
-  /* v7.5：字幕状态 —— 只显「定稿」（final）。partial 半成品会被流式引擎反复修正，
-     上屏观感就是"错漏多、来回改"，用户实测定稿：不再显示，改为轻量「识别中」提示。
-     已有定稿在显时收到 partial：保持旧定稿，等新定稿整句替换（输出稳定优先）。 */
+  /* v7.7：字幕恢复「实时跟上、定稿定格」（v7.3 手感的单行版）。
+     partial 半成品实时上屏（半亮 .part），final 定稿整句替换（全亮）——
+     反馈即时（v7.3 的速度优点），定稿一锤定音（准确观感）。
+     v7.5 的「只显定稿」实测等待感强、反应偏慢，废弃；其按台语言记忆保留。
+     双行（上一句灰化保留）经权衡不采用：多占一行 LED 高度，历史价值有限，
+     单行足够（用户也倾向紧凑构图）。 */
   var asrCur = '', asrCurFinal = false, asrListening = false;
   function renderSubtitle(){
     var box = document.getElementById('npSubtitle');
@@ -4119,7 +4123,7 @@ function setAutoLevel(on){
     }
     if(asrCur){
       curEl.textContent = asrCur + '\u3000\u3000·\u3000\u3000' + asrCur;
-      curEl.classList.remove('part');
+      curEl.classList.toggle('part', !asrCurFinal);
       box.classList.add('show');
     } else if(asrListening){
       curEl.textContent = '\u00b7\u00b7\u00b7\u3000\u8bed\u97f3\u8bc6\u522b\u4e2d\u3000\u00b7\u00b7\u00b7';
@@ -4305,10 +4309,12 @@ function splitIcyTwoLines(text){
    宽屏不换行时长歌名也会穿过时钟分隔线伸进其空白下半。
    故竖屏一律把 ICY 的右边界收到时钟块左缘外 10px；横屏 / 桌面恒为 0（跑马灯占满，不受影响）。 */
 function layoutIcyInset(){
-  /* v7.6：ICY 两行块绝对定位于 .screen-row 内（竖屏显示），三要素实测注入：
+  /* v7.7：ICY 两行块绝对定位于 .screen-row 内（竖屏显示），三要素实测注入：
      · 右缘 --icy-inset = 时钟块左缘外 10px（长歌名不压日期/秒数，v55 精神延续）；
      · 底边 --icy-bottom = 日期底边（ICY 与日期底端同一水平线，用户实测定稿）；
-     · 左缘 --icy-left  = 圆盘右缘外 10px（不压圆盘，默认与台名列左缘对齐）。
+     · 左缘 --icy-left  = 默认贴行左缘（v7.7：台名/圆盘下方空带一并利用，长曲目
+       不再过早截断；文字右对齐贴时钟）。仅当圆盘下缘可能侵入 ICY 带（矮屏圆盘
+       过大，icy 带高约 30px）时回退为圆盘右缘外 10px，避免压盘。
      横屏/桌面 ICY 不显示，量了也无副作用。 */
   var row = document.querySelector('.screen-row');
   var clock = document.querySelector('.lcd-clock');
@@ -4319,9 +4325,12 @@ function layoutIcyInset(){
   var dr = date.getBoundingClientRect();
   var inset = Math.max(10, rr.width - (cr.left - rr.left) + 10);
   var bottom = Math.max(0, rr.bottom - dr.bottom);
-  var left = 72;
+  var left = 0;
   var art = document.getElementById('artwork');
-  if(art){ var ar = art.getBoundingClientRect(); left = Math.max(0, ar.right - rr.left + 10); }
+  if(art){
+    var ar = art.getBoundingClientRect();
+    if((rr.bottom - ar.bottom) < 34){ left = Math.max(0, ar.right - rr.left + 10); }
+  }
   row.style.setProperty('--icy-inset', inset.toFixed(1) + 'px');
   row.style.setProperty('--icy-bottom', bottom.toFixed(1) + 'px');
   row.style.setProperty('--icy-left', left.toFixed(1) + 'px');
@@ -4359,23 +4368,16 @@ function setSyncedText(t){
   box.classList.add('show');
 }
 window.__onIcy = function(t){ try{ setSyncedText(t); }catch(e){} };
-/* v7.5：只显定稿（final）。partial 半成品不再上屏 —— 它是未定稿的猜测，会被反复修正，
-   观感"错漏多"；定稿相对准确、稳定。收到 partial 时：
-   · 还没有任何定稿 → 显示轻量「识别中」提示；
-   · 已有定稿在显   → 保持旧定稿，等新定稿整句替换（不被半成品打断）。
-   空文本（静音段）一律忽略；关掉字幕开关则一律丢弃（双重保险）。 */
+/* v7.7：partial 实时上屏（半亮），final 定稿全亮替换 —— v7.3 手感（反馈即时）；
+   v7.5 遗产保留：按台语言记忆（asrLangMap）、空文本/关开关双重丢弃。
+   v7.5 的「只显定稿」实测反应偏慢（等待感强），废弃。 */
 window.__onAsr = function(text, isFinal){
   try{
     if(!asrOn) return;
     var t = (text||'').trim();
     if(!t) return;
-    if(isFinal){
-      asrCur = t; asrCurFinal = true; asrListening = false;
-      renderSubtitle();
-    } else if(!asrCur){
-      asrListening = true;
-      renderSubtitle();
-    }
+    asrCur = t; asrCurFinal = !!isFinal; asrListening = false;
+    renderSubtitle();
   }catch(e){}
 };
 
