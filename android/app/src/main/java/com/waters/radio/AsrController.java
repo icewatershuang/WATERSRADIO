@@ -55,7 +55,10 @@ public class AsrController {
     private static final Map<String, String> MODEL_ZIP = new HashMap<>();
     static {
         MODEL_ZIP.put("en", "vosk-model-small-en-us-0.15.zip");   // 英语（小模型 ~40MB）
-        MODEL_ZIP.put("zh", "vosk-model-small-cn-0.22.zip");     // 中文（官方小模型 ~42MB；⚠️ 官方名是 small-cn-0.22，不存在 small-zh-cn-0.3）
+        /* v7.8：中文模型移出精简包（APK 100MB→~56MB，实测 0.22-lgraph 手机上 RTF>1
+           会积压毁同步，small-0.15 才是流式正确解）。zh 不进 MODEL_ZIP ——
+           选中中文时 zipName==null 直接判失败关字幕，绝不触发联网下载兜底；
+           JS 侧 setAsrLang 已先行把 zh 回退 en（含旧存档）。 */
     }
 
     private final RadioPlaybackService service;
@@ -248,7 +251,7 @@ public class AsrController {
         File existing = findModelDir(langDir);
         if (existing != null) return existing;
         String zipName = MODEL_ZIP.get(l);
-        if (zipName == null) return null;
+        if (zipName == null) { toast("该语言模型未内置（精简包），字幕已关闭"); return null; }
 
         /* ① 内置模型：assets/vosk/<zip> → 解压到 filesDir/vosk/<lang> */
         InputStream ain = null;
