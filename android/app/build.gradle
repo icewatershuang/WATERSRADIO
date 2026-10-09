@@ -17,8 +17,8 @@ android {
            API 14-20 只有实体键 onKeyDown 兜底。 */
         minSdk 14
         targetSdk 34
-        versionCode 11
-        versionName "7.3"
+        versionCode 12
+        versionName "7.4"
     }
 
     /* v7.2：语音模型 zip（assets/vosk/*.zip，共约 80MB）本身已是压缩格式，

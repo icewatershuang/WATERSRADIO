@@ -144,7 +144,14 @@ public class AsrController {
     /* ---------------- PCM 投喂（JsBridge.asrPcm 调入，16kHz 单声道 16-bit） ---------------- */
     public void feedPcm(byte[] pcm16k) {
         if (!enabled || pcm16k == null || pcm16k.length == 0) return;
-        pcmQ.offer(pcm16k);   /* 队列满 → 丢包保命，识别短暂缺字 */
+        /* v7.4：延迟钉死 —— 队列积压超过 12 包(≈3s)就丢最老的。
+           v7.3 及之前是「满了丢新包」：一旦某次卡顿造成积压，队列常年保持 64 包满载
+           （drop-newest 挡住新音频、旧音频压在队头），字幕会永久落后实况最多 16s，
+           用户实测就是「字幕慢半拍、跟耳朵对不上」。实时电台宁可直接跳过几分钟前
+           的陈旧音频，也要让识别始终对着耳朵正在听的内容 —— 丢包缺口只在卡顿瞬间
+           出现（≤3s 窗口），随后立刻追平。 */
+        while (pcmQ.size() >= 12) pcmQ.poll();
+        pcmQ.offer(pcm16k);
         ensureWorker();
     }
 
