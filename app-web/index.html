@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v7.5</title>
+<title>WATERS RADIO · v7.6</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -525,9 +525,9 @@
 
   /* 左列：竖屏时只有圆盘（LED 唱片）。下方「左下空挡」由 v52 的 ICY 两行块占满屏宽填充。 */
   .screen-left{display:flex;flex-direction:column;align-items:center;gap:9px;flex-shrink:0}
-  /* v52：竖屏 ICY 两行块（演唱者 / 歌名）。默认全部隐藏 —— 横屏与桌面沿用原跑马灯。
-     ⚠️ 位置放在 .screen-row 之后、占满屏宽左对齐：左列只有 54px 宽，
-        DSEG7/常规字体都塞不下两行曲目文字（"Fly Me To The Moon" 在 54px 内要折 3 行） */
+  /* v52→v7.6：竖屏 ICY 两行块（演唱者 / 歌名）。默认全部隐藏 —— 横屏与桌面沿用原跑马灯。
+     v7.6 起绝对定位于 .screen-row 内（时钟左侧、底边与日期对齐，见竖屏媒体查询块），
+     位置三要素由 layoutIcyInset() 实测注入 */
   .np-icy{
     display:none;width:100%;text-align:left;line-height:1.3;
     font-size:11px;letter-spacing:.02em;
@@ -535,7 +535,7 @@
     text-shadow:0 0 7px rgba(255,180,85,.35);
     overflow:hidden;
   }
-  /* v7.5：ICY 两行各自单行（超长省略），保证字幕带高度恒定、不被长文本撑高 */
+  /* v7.6：ICY 两行各自单行（超长省略），ICY 定宽由 left/right 双约束保证，长文本不出界 */
   .np-icy div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   /* v7.4：语音字幕 —— LED 屏内底端单行走马灯（竖屏横屏都一行；用户实测定稿）。
@@ -563,8 +563,9 @@
   /* 浅色主题：琥珀辉光在白底上会糊，直接关掉（字色本身走 --lcd-glow 自动适配） */
   html[data-theme="mono"] .np-subtitle .sub-track,
   html[data-theme="eink"] .np-subtitle .sub-track{text-shadow:none}
-  /* v7.5：底部字幕带——ICY（竖屏两行 / 横屏跑马灯）与 语音字幕 同处恒定高度一带；
-     高度恒定 → 显示 ICY 时不再纵向撑大 LED 屏（旧版竖屏 icy-reserve 留白 / 横屏 marquee 文档流都会撑高） */
+  /* v7.6：底部字幕带 —— 跑马灯（横屏/桌面）与 语音字幕 按需占高、内容自适应，
+     不再预留固定空带（用户反馈划线以下空间多余）；ICY 已移回 .screen-row（竖屏），
+     显示 ICY / 跑马灯 / 字幕 都不会再出现「内容下方的空带」 */
   .screen-ticker{position:relative;width:100%;flex:0 0 auto;overflow:hidden;display:flex;flex-direction:column}
   /* 语言下拉在设置行里要紧凑，不能占满整行把开关挤出去（特异性 ID 压过通用 .ios-select{width:100%}） */
   #subtitleLang{ width:auto;min-width:84px;flex:0 0 auto; }
@@ -1516,27 +1517,26 @@
     .lcd-time{font-size:24.7px}
     .lcd-date{font-size:11.44px}               /* v54：14.3×0.8（原始基准的 0.8×，去掉 v51 的 ×1.2 与加粗） */
     .lcd-sec{font-size:9px}
-    /* v50：竖屏 LCD 富余高度由 .screen-row 吃掉（flex:1），三列拉伸到整屏高：
-       台名列 label/台名/状态 上下均匀分布（状态行填住左下空带）；圆盘、时钟组垂直居中；
-       时钟分隔线通高 —— 用户圈出的「左下空带」消失 */
+    /* v50→v7.6：竖屏 LCD 富余高度由 .screen-row 吃掉（flex:1），三列拉伸到整屏高：
+       信息组顶端对齐、时钟组底端对齐、ICY 两行块填住时钟左侧底带（见下方） */
     .screen-row{align-items:stretch;align-content:stretch}
-    /* v56：信息组（label/台名/状态）整组垂直居中。
-       v60：顶部预留 48→14px（用户要求紧凑）。
-       v7.5：ICY 两行块已并入高度恒定的 .screen-ticker（见下方），
-       此处不再对 .screen-info 做动态留白，LED 屏高度恒定 */
-    .screen-info{justify-content:center;padding-top:14px;padding-bottom:14px}
-    .lcd-clock{align-self:stretch}
+    /* v7.6：信息组改顶端对齐 + 底部预留 32px ICY 带 —— ICY 两行块绝对定位于时钟左侧、
+       底边与日期对齐（用户实测定稿），恰好填进这个预留带，几何上保证不与台名文字重叠
+       （旧版 justify-content:center 会把台名/状态压进时钟带，与 ICY 重叠） */
+    .screen-info{justify-content:flex-start;padding-top:14px;padding-bottom:32px}
+    /* v7.6：时钟组底端对齐 —— 日期底边贴行底，ICY 底边与之同一水平线（构图同用户截图） */
+    .lcd-clock{align-self:stretch;justify-content:flex-end}
     /* v53：去掉 v51 的电平柱后，左列只剩圆盘——改为整行垂直居中，避免圆盘上方/下方出现空带 */
     .screen-left{align-self:center}
-    /* v7.5：竖屏 ICY 两行块改为字幕带内的常规流元素（不再绝对定位），
-       与语音字幕同处高度恒定的 .screen-ticker，显示 ICY 不再撑大 LED 屏 */
-    .np-icy{position:static;left:auto;right:auto;bottom:auto;width:100%;z-index:5}
+    /* v7.6：ICY 两行块绝对定位于 .screen-row 内 —— 右缘收到时钟块左缘外 10px、
+       底边与日期底边同一水平线、左缘让开圆盘（三要素由 layoutIcyInset() 实测注入），
+       填充时钟左侧留白，不再另起一行（用户实测定稿） */
+    .np-icy{position:absolute;left:var(--icy-left,72px);right:var(--icy-inset,10px);bottom:var(--icy-bottom,0px);width:auto;z-index:5}
     .np-icy.show{display:block}
     .np-marquee.show{display:none}
-    /* 字幕带固定高度（竖屏：两行 ICY + 单行字幕 约 76px，留 6px 余量）；
-       用固定高而非 min-height —— 否则两者同显时内容超过下限仍会撑高 LED 屏。
-       超出部分由 .screen-ticker 的 overflow:hidden 裁切（正常两行内容不会触发） */
-    .screen-ticker{height:82px;gap:4px}
+    /* v7.6：字幕带高度改为内容自适应（竖屏只含语音字幕一行），不再预留固定空带；
+       ICY 已移出字幕带 → 显示 ICY 依旧不影响 LED 屏高度 */
+    .screen-ticker{gap:4px}
     .controls{gap:24px;margin:0}
     .ctrl-btn{width:64px;height:64px}
     .ctrl-btn svg{width:28px;height:28px}
@@ -1674,8 +1674,8 @@
     canvas.viz{height:26px}
     .np-subtitle{padding:4px 10px 5px;margin-top:3px}
     .screen-main{gap:8px}
-    /* v7.5：横屏字幕带固定高度（跑马灯 + 单行字幕 约 57px，留余量）；ICY 出现不撑高 */
-    .screen-ticker{height:60px;gap:3px}
+    /* v7.6：横屏字幕带同样内容自适应（跑马灯 + 单行字幕按需占高），不再预留固定空带 */
+    .screen-ticker{gap:3px}
   }
 
   /* ========== v59：横屏隐藏底栏（把这一条高度还给主页面） ==========
@@ -1805,11 +1805,14 @@
             <div class="lcd-time" id="lcdTime">--:--</div>
             <div class="lcd-date" id="lcdDate">--.--</div>
           </div>
+          <!-- v7.6：ICY 两行块移回 .screen-row 内 —— 绝对定位在时钟左侧、底边与日期对齐
+               （填充时钟左边留白、不再另起一行，用户实测定稿），
+               位置三要素 --icy-left/--icy-inset/--icy-bottom 由 layoutIcyInset() 实测注入 -->
+          <div class="np-icy" id="npIcy"><div id="npIcyL1"></div><div id="npIcyL2"></div></div>
           </div><!-- /screen-row -->
-          <!-- v7.5：底部「字幕带」高度恒定（ICY 两行 / 跑马灯 + 语音字幕同处一带），
-               显示 ICY 时不再纵向撑大 LED 屏 -->
+          <!-- v7.6：底部「字幕带」改为内容自适应高度（跑马灯 + 语音字幕按需占高），
+               不再预留固定空带；ICY 已移出字幕带 → 显示 ICY 依旧不撑大 LED 屏 -->
           <div class="screen-ticker" id="screenTicker">
-            <div class="np-icy" id="npIcy"><div id="npIcyL1"></div><div id="npIcyL2"></div></div>
             <div class="np-marquee" id="npMarquee" aria-hidden="true"><span class="np-marquee-track" id="npMarqueeTrack"></span></div>
             <div class="np-subtitle" id="npSubtitle"></div>
           </div>
@@ -4302,11 +4305,31 @@ function splitIcyTwoLines(text){
    宽屏不换行时长歌名也会穿过时钟分隔线伸进其空白下半。
    故竖屏一律把 ICY 的右边界收到时钟块左缘外 10px；横屏 / 桌面恒为 0（跑马灯占满，不受影响）。 */
 function layoutIcyInset(){
-  /* v7.5：ICY 两行块已移入 .screen-ticker（在 .screen-row 下方独立一带），
-     不再与右侧时钟重叠，右边界无需让位，恒为 0 */
+  /* v7.6：ICY 两行块绝对定位于 .screen-row 内（竖屏显示），三要素实测注入：
+     · 右缘 --icy-inset = 时钟块左缘外 10px（长歌名不压日期/秒数，v55 精神延续）；
+     · 底边 --icy-bottom = 日期底边（ICY 与日期底端同一水平线，用户实测定稿）；
+     · 左缘 --icy-left  = 圆盘右缘外 10px（不压圆盘，默认与台名列左缘对齐）。
+     横屏/桌面 ICY 不显示，量了也无副作用。 */
   var row = document.querySelector('.screen-row');
-  if(row) row.style.setProperty('--icy-inset', '0px');
+  var clock = document.querySelector('.lcd-clock');
+  var date = document.getElementById('lcdDate');
+  if(!row || !clock || !date) return;
+  var rr = row.getBoundingClientRect();
+  var cr = clock.getBoundingClientRect();
+  var dr = date.getBoundingClientRect();
+  var inset = Math.max(10, rr.width - (cr.left - rr.left) + 10);
+  var bottom = Math.max(0, rr.bottom - dr.bottom);
+  var left = 72;
+  var art = document.getElementById('artwork');
+  if(art){ var ar = art.getBoundingClientRect(); left = Math.max(0, ar.right - rr.left + 10); }
+  row.style.setProperty('--icy-inset', inset.toFixed(1) + 'px');
+  row.style.setProperty('--icy-bottom', bottom.toFixed(1) + 'px');
+  row.style.setProperty('--icy-left', left.toFixed(1) + 'px');
 }
+/* v7.6：尺寸/方向变化时重测（时钟换行、字号分档、字体加载都会改变三要素） */
+window.addEventListener('resize', layoutIcyInset);
+window.addEventListener('orientationchange', layoutIcyInset);
+window.addEventListener('load', layoutIcyInset);
 
 function renderIcyLines(t){
   var box = document.getElementById('npIcy');
