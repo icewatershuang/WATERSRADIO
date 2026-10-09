@@ -61,6 +61,9 @@ public class RadioPlaybackService extends Service {
     private volatile String nowTitle = "";       /* ICY 推来的实时曲目（歌手 - 歌名） */
     private volatile IcyMetadataTask icyTask = null;
     private volatile String icyUrl = "";
+    /* v7.3：锁屏字幕 —— 最新定稿句（≤60 字，换台即清）；节流 ≥1.5s 一推防通知风暴 */
+    private volatile String asrLine = "";
+    private volatile long asrLineAt = 0L;
 
     /* ------------------------------------------------------------
      * Service 生命周期
@@ -82,7 +85,9 @@ public class RadioPlaybackService extends Service {
         if (intent != null && intent.hasExtra("name")) {
             nowName = intent.getStringExtra("name");
             nowPlaying = intent.getBooleanExtra("playing", false);
-            nowUrl = intent.getStringExtra("url"); if (nowUrl == null) nowUrl = "";
+            String inUrl = intent.getStringExtra("url"); if (inUrl == null) inUrl = "";
+            if (!inUrl.equals(nowUrl)) asrLine = "";   /* v7.3：换台即清锁屏字幕 */
+            nowUrl = inUrl;
             nowTitle = intent.getStringExtra("title"); if (nowTitle == null) nowTitle = "";
             updateSession();
             startIcyIfNeeded();
@@ -157,6 +162,18 @@ public class RadioPlaybackService extends Service {
     /* v7.0：把识别出的字幕文本回传主页（window.__onAsr） */
     void callAsrJs(String text, boolean isFinal) {
         callJs("window.__onAsr && window.__onAsr(" + JSONObject.quote(text) + "," + (isFinal ? "true" : "false") + ")");
+        /* v7.3：锁屏字幕 —— 只推定稿句（partial 永不上锁屏），节流 1.5s 防通知风暴/耗电/系统限流 */
+        if (isFinal && text != null) {
+            String t = text.trim();
+            if (!t.isEmpty()) {
+                asrLine = t.length() > 60 ? t.substring(0, 60) + "…" : t;
+                long now = System.currentTimeMillis();
+                if (now - asrLineAt >= 1500) {
+                    asrLineAt = now;
+                    updateSession();
+                }
+            }
+        }
     }
 
     /* v7.0：识别相关提示（用网页的 toast） */
@@ -207,7 +224,9 @@ public class RadioPlaybackService extends Service {
             String sessionTitle = !nowTitle.isEmpty() ? nowTitle
                 : (nowName.isEmpty() ? "WATERS RADIO" : nowName);
             md.putString(android.media.MediaMetadata.METADATA_KEY_TITLE, sessionTitle);
-            md.putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, "Waters Radio");
+            /* v7.3：锁屏/蓝牙副行 —— 有字幕时显示最新定稿句，否则回退应用名 */
+            md.putString(android.media.MediaMetadata.METADATA_KEY_ARTIST,
+                asrLine.isEmpty() ? "Waters Radio" : asrLine);
             md.putLong(android.media.MediaMetadata.METADATA_KEY_DURATION, -1);  /* 直播流未知时长 */
             mediaSession.setMetadata(md.build());
 
@@ -361,8 +380,9 @@ public class RadioPlaybackService extends Service {
         }
         b.setSmallIcon(android.R.drawable.ic_media_play)
          .setContentTitle("WATERS RADIO")
-         .setContentText(!nowTitle.isEmpty() ? nowTitle
-            : (nowName.isEmpty() ? "正在播放电台" : nowName))
+         .setContentText(!asrLine.isEmpty() ? asrLine        /* v7.3：锁屏字幕优先于曲目/台名 */
+            : (!nowTitle.isEmpty() ? nowTitle
+            : (nowName.isEmpty() ? "正在播放电台" : nowName)))
          .setContentIntent(contentPi)
          .setOngoing(true)
          .setOnlyAlertOnce(true);

@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v7.2.1</title>
+<title>WATERS RADIO · v7.3</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -538,22 +538,35 @@
   /* 英文按单词折行（不拆词），只有超长单词才强制断开 */
   .np-icy div{overflow-wrap:break-word;word-break:normal}
 
-  /* v7.0：语音识别字幕层（安装版经 Vosk 离线识别，流式文本回传主页；默认隐藏，识别有文字才显示） */
+  /* v7.3：语音字幕 —— LED 屏内底端走马灯（竖屏双行：上一句灰化+当前句全亮；横屏单行）。
+     取代 v7.0 的黑底白字浮层：字幕是屏面"活信息"，与台名/ICY/时钟同走 LCD 荧光字体系；
+     元素移入 .screen-main（深色 LCD）内部，配 .sub-mq/.sub-track 走马灯结构（同 np-marquee 家族）。 */
   .np-subtitle{
-    display:none;position:absolute;left:8px;right:8px;bottom:3px;z-index:5;
-    padding:6px 12px;border-radius:8px;
-    background:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.64));
-    color:#fff;font-size:14px;line-height:1.35;text-align:center;
-    -webkit-text-stroke:0;text-shadow:0 1px 3px rgba(0,0,0,.85);
-    letter-spacing:.01em;overflow:hidden;max-height:3.4em;
+    display:none;padding:9px 10px 8px;margin-top:5px;overflow:hidden;
+    color:var(--lcd-glow);font-size:13.5px;line-height:1.55;letter-spacing:.01em;
   }
   .np-subtitle.show{display:block}
-  /* 浅色主题（水墨屏 / 纯黑白）屏面是白的 → 字幕翻成浅底深字，保证可读 */
-  html[data-theme="mono"] .np-subtitle,
-  html[data-theme="eink"] .np-subtitle{
-    background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(248,246,240,.96));
-    color:#1a1a1a;text-shadow:none;box-shadow:0 0 0 1px rgba(0,0,0,.12);
+  .np-subtitle .sub-mq{overflow:hidden;white-space:nowrap}
+  .np-subtitle .sub-track{
+    display:inline-block;padding-left:100%;
+    animation:subScroll 22s linear infinite;
+    font-weight:500;text-shadow:0 0 7px rgba(255,180,85,.35);
   }
+  /* 上一句（已定稿沉底）：灰化、小一号、不发光 */
+  .np-subtitle .sub-mq.dim .sub-track{
+    animation-duration:26s;font-weight:400;font-size:12.5px;opacity:.5;text-shadow:none;
+  }
+  /* 流式听写中（partial）半亮，整句定稿（final）全亮 —— "LCD 扫描定影"感 */
+  .np-subtitle .sub-track.part{opacity:.55}
+  @keyframes subScroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+  /* 横屏（双栏布局垂直稀缺）：只显示当前句单行、字号收一档 */
+  @media (orientation:landscape){
+    .np-subtitle .sub-mq.dim{display:none}
+    .np-subtitle .sub-track{font-size:12.5px}
+  }
+  /* 浅色主题：琥珀辉光在白底上会糊，直接关掉（字色本身走 --lcd-glow 自动适配） */
+  html[data-theme="mono"] .np-subtitle .sub-track,
+  html[data-theme="eink"] .np-subtitle .sub-track{text-shadow:none}
   /* 语言下拉在设置行里要紧凑，不能占满整行把开关挤出去（特异性 ID 压过通用 .ios-select{width:100%}） */
   #subtitleLang{ width:auto;min-width:84px;flex:0 0 auto; }
   #subtitleItem[hidden]{ display:none; }
@@ -1511,10 +1524,10 @@
     /* v56：信息组（label/台名/状态）整组垂直居中。
        v60：顶部预留 48→14px（用户要求紧凑）。
        v61：底部让位带也动态化 —— 默认 14px（无 ICY 时屏面紧凑，用户截图圈出的空带消除）；
-       仅当 ICY 两行块出现（.icy-reserve，只有 APK 会推 ICY）才恢复 48px，
-       避免状态行与贴行底的 ICY 歌名重叠（v55 语义保留） */
+       仅当 ICY 单行块出现（.icy-reserve，只有 APK 会推 ICY）才恢复 28px，
+       避免状态行与贴行底的 ICY 歌名重叠（v55 语义保留；v7.3 单行化 48→28px） */
     .screen-info{justify-content:center;padding-top:14px;padding-bottom:14px}
-    .screen-info.icy-reserve{padding-bottom:48px}
+    .screen-info.icy-reserve{padding-bottom:28px}
     /* v54：ICY 两行块绝对定位贴行底（全宽），会与信息列最后一项（状态行）撞在同一底边带；
        v55：预留提高到 48px —— ICY 让位后宽度变窄，长歌名会折到第三行（约 43px），
        48px 保证状态行与任意行数的 ICY 都不重叠 */
@@ -1790,10 +1803,10 @@
           <!-- v52：竖屏专用——ICY 数据两行显示（演唱者 / 歌名，无分隔符时按单词或字数均分）。
                横屏与桌面仍沿用原来的滚动跑马灯（np-marquee），由 CSS 分派。 -->
           <div class="np-marquee" id="npMarquee" aria-hidden="true"><span class="np-marquee-track" id="npMarqueeTrack"></span></div>
+          <!-- v7.3：语音字幕（LED 屏底端走马灯：竖屏双行 / 横屏单行；由 .screen 外移入深色屏内） -->
+          <div class="np-subtitle" id="npSubtitle"></div>
         </div>
         <div class="viz-wrap"><canvas class="viz" id="viz" width="600" height="46.8"></canvas></div>
-        <!-- v7.0：语音识别字幕层（安装版经 Vosk 离线识别，流式文本回传主页） -->
-        <div class="np-subtitle" id="npSubtitle"></div>
       </div>
       <div class="np-repair" id="repairHint"></div>
 
@@ -4072,13 +4085,31 @@ function setAutoLevel(on){
     return !!(window.WatersNative && typeof window.WatersNative.asrAvailable === 'function'
       && window.WatersNative.asrAvailable());
   }
-  function renderSubtitle(text){
+  /* v7.3：字幕状态机 —— asrPrev=上一句定稿（灰化行）；asrCur=当前句（partial 半亮→final 全亮） */
+  var asrPrev = '', asrCur = '', asrCurFinal = false;
+  function renderSubtitle(){
     var box = document.getElementById('npSubtitle');
     if(!box) return;
-    if(!text){ box.textContent=''; box.classList.remove('show'); return; }
-    box.textContent = text;
+    if(!asrPrev && !asrCur){ box.classList.remove('show'); box.innerHTML=''; return; }
+    /* 行结构只在「上一句从无到有」时重建，平时只改文本节点 → 走马灯动画不重启 */
+    var prevEl = box.querySelector('.sub-mq.dim .sub-track');
+    var curEl  = box.querySelector('.sub-mq:not(.dim) .sub-track');
+    if(!curEl || (asrPrev && !prevEl)){
+      var html = '';
+      if(asrPrev) html += '<div class="sub-mq dim"><span class="sub-track"></span></div>';
+      html += '<div class="sub-mq"><span class="sub-track"></span></div>';
+      box.innerHTML = html;
+      prevEl = box.querySelector('.sub-mq.dim .sub-track');
+      curEl  = box.querySelector('.sub-mq:not(.dim) .sub-track');
+    }
+    if(prevEl) prevEl.textContent = asrPrev ? asrPrev + '\u3000\u3000·\u3000\u3000' + asrPrev : '';
+    if(curEl){
+      curEl.textContent = asrCur + '\u3000\u3000·\u3000\u3000' + asrCur;
+      curEl.classList.toggle('part', !asrCurFinal);
+    }
     box.classList.add('show');
   }
+  function clearSubtitle(){ asrPrev=''; asrCur=''; asrCurFinal=false; renderSubtitle(); }
   function setAsr(on){
     asrOn = !!on;
     saveStr(LS.asr, asrOn ? '1':'0');
@@ -4086,7 +4117,7 @@ function setAutoLevel(on){
     if(asrAvailable() && typeof window.WatersNative.setAsr === 'function'){
       try{ window.WatersNative.setAsr(asrOn ? '1':'0'); }catch(e){}
     }
-    if(!asrOn) renderSubtitle('');   /* 关掉立即清屏 */
+    if(!asrOn) clearSubtitle();   /* 关掉立即清屏 */
     /* v7.1：开→（若正在播）接管 PCM 采集；关→停采 */
     if(asrOn){ if(audio && !audio.paused) asrTapStart(); }
     else asrTapStop();
@@ -4212,37 +4243,8 @@ function prevNext(dir){
 /* ---------- 10. 渲染 ---------- */
 var syncedText = '';
 
-/* ===== v52：把 ICY 文本拆成两行 =====
-   ①「演唱者 - 歌名」：按常见分隔符拆成 演唱者 / 歌名 各占一行
-   ② 其他内容（节目名、口号、广告语等）：英文按单词、无空格（中文等）按字数，尽量均分成两行 */
-function splitIcyTwoLines(text){
-  text = (text || '').trim();
-  if(!text) return ['', ''];
-  var seps = [' - ', ' – ', ' — ', ' － ', ' | ', ' -- '];
-  for(var i=0;i<seps.length;i++){
-    var sp = seps[i];
-    var p  = text.indexOf(sp);
-    if(p > 0 && p < text.length - sp.length){
-      return [text.slice(0, p).trim(), text.slice(p + sp.length).trim()];
-    }
-  }
-  // 无分隔符：有空格（英文等）按单词均分；无空格（中文等）按字数中点切
-  if(/\s/.test(text)){
-    var words = text.split(/\s+/);
-    if(words.length < 2) return [text, ''];
-    var cut = 1, best = Infinity;
-    for(var k=1;k<words.length;k++){
-      var a = words.slice(0, k).join(' ').length;
-      var b = words.slice(k).join(' ').length;
-      var d = Math.abs(a - b);
-      if(d < best){ best = d; cut = k; }
-    }
-    return [words.slice(0, cut).join(' '), words.slice(cut).join(' ')];
-  }
-  var mid = Math.ceil(text.length / 2);
-  return [text.slice(0, mid), text.slice(mid)];
-}
-/* v55：竖屏上 .lcd-clock（margin-left:auto，右对齐）与贴底的全宽 ICY 两行块共用底边带 ——
+/* v52（v7.3 起废弃）：曾把 ICY 拆成演唱者/歌名两行均分；v7.3 定稿改为整句单行直显，原函数移除。
+   v55：竖屏上 .lcd-clock（margin-left:auto，右对齐）与贴底的全宽 ICY 块共用底边带 ——
    窄屏时它甚至换行到 .screen-row 末行，长歌名会直接压到日期/秒数上（用户截图实证）；
    宽屏不换行时长歌名也会穿过时钟分隔线伸进其空白下半。
    故竖屏一律把 ICY 的右边界收到时钟块左缘外 10px；横屏 / 桌面恒为 0（跑马灯占满，不受影响）。 */
@@ -4265,10 +4267,12 @@ function renderIcyLines(t){
   var l1  = document.getElementById('npIcyL1');
   var l2  = document.getElementById('npIcyL2');
   if(!box || !l1 || !l2) return;
-  var pair = splitIcyTwoLines(t);
-  l1.textContent = pair[0] || '';
-  l2.textContent = pair[1] || '';
-  var has = !!(pair[0] || pair[1]);
+  /* v7.3：竖屏 ICY 单行（用户定稿）—— 废弃 v52 的演唱者/歌名两行均分，整句一行直显 */
+  var line = (t || '').trim();
+  l1.textContent = line;
+  l2.textContent = '';
+  l2.style.display = 'none';
+  var has = !!line;
   box.classList.toggle('show', has);
   /* v61：竖屏 LED 的 48px 底部让位带只为 ICY 两行块而留 ——
      有 ICY 内容（仅 APK 会有）才加 .icy-reserve，没有就收紧，屏面不再空旷。
@@ -4290,18 +4294,30 @@ function setSyncedText(t){
   box.classList.add('show');
 }
 window.__onIcy = function(t){ try{ setSyncedText(t); }catch(e){} };
-/* v7.0：原生层（APK + Vosk）把识别出的文字流式推回来；isFinal 标记是否为整句终稿，
-   流式 partial 与 final 都直接渲染最新文本，关掉字幕开关则一律丢弃（双重保险）。 */
+/* v7.3：原生层（APK + Vosk）把识别文字流式推回；isFinal=整句终稿。
+   状态机：partial 累积成当前句（半亮随写随更）；final 全亮定稿；
+   新一句开讲（partial 到来且当前句已定稿）→ 旧定稿句沉到灰化行走马灯，只保留最近一句。
+   空 partial（静音段）不清屏 —— 灰化行+当前句留着供跟读；关掉字幕开关则一律丢弃（双重保险）。 */
 window.__onAsr = function(text, isFinal){
   try{
     if(!asrOn) return;
-    renderSubtitle((text||'').trim());
+    var t = (text||'').trim();
+    if(isFinal){
+      if(t){
+        if(asrCurFinal && asrCur && t !== asrCur) asrPrev = asrCur;  /* 连续定稿：旧句沉底 */
+        asrCur = t; asrCurFinal = true;
+      }
+    }else if(t){
+      if(asrCurFinal && asrCur) asrPrev = asrCur;   /* 新一句开讲：上一句定稿沉到灰化行 */
+      asrCur = t; asrCurFinal = false;
+    }
+    renderSubtitle();
   }catch(e){}
 };
 
 function renderNow(){
   setSyncedText('');   /* v47：切台即清空旧同步文字，等新 ICY 推来 */
-  renderSubtitle('');  /* v7.0：切台同时清空语音字幕 */
+  clearSubtitle();  /* v7.3：切台同时清空语音字幕 */
   const cur = state.current;
   /* v43：屏面显示规整短名（displayName 收主名，如「80后音悦台」），
      CSS 允许两行折行，长名不再截成「W…」这种残名 */
