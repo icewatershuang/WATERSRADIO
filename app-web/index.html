@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v7.9</title>
+<title>WATERS RADIO · v8.0</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -2136,16 +2136,15 @@
         <label class="switch"><input type="checkbox" id="fullscreenSw" /><span class="switch-track"></span></label>
       </div>
 
-      <!-- v7.0：语音识别字幕（安装版经 Vosk 离线识别，流式字幕回传主页；仅支持的设备显示本项） -->
+      <!-- v8.0：语音识别字幕（安装版经 sherpa-onnx 离线识别，流式字幕回传主页；仅支持的设备显示本项） -->
       <div class="setting-item" id="subtitleItem" hidden>
         <span class="setting-label">语音字幕<small class="sched-hint">安装版把直播流离线识别成文字、以字幕形式显示，方便跟读外语电台；语音模型已内置，开箱即用、无需联网；仅支持的设备显示本项</small></span>
         <span class="setting-btns">
           <select class="ios-select sched-select" id="subtitleLang">
             <option value="en">英语</option>
             <option value="auto">自动</option>
-            <!-- v7.8：中文模型已移出精简包（APK 减 42MB）—— 旧存档里的 zh 记忆在
-                 setAsrLang 里自动回退 en；如需恢复，放回 assets/vosk 的 cn zip +
-                 MODEL_ZIP 映射 + 此选项即可 -->
+            <!-- v8.0：内置英文流式 Zipformer 模型（assets/asr/），仅英文；
+                 中文需换模型，暂未内置；旧存档 zh 记忆在 setAsrLang 里自动回退 en -->
           </select>
           <label class="switch"><input type="checkbox" id="subtitleSw" /><span class="switch-track"></span></label>
         </span>
@@ -4156,10 +4155,9 @@ function setAutoLevel(on){
     else asrTapStop();
   }
   function setAsrLang(lang){
-    /* v7.8：中文模型已移出精简包 —— 老存档（asrLangMap/全局 zh）静默回退英文，
-       避免触发原生的联网下载兜底（精简包里没有 zh，下载只会失败白耗流量） */
+    /* v8.0：内置包仅含英文流式模型，老存档（asrLangMap/全局 zh）静默回退英文 */
     if(lang === 'zh'){
-      toast('精简包未内置中文识别模型，已回退英语', 'warn');
+      toast('内置包仅含英文识别模型，已回退英语', 'warn');
       lang = 'en';
     }
     asrLang = lang || 'en';
@@ -4181,7 +4179,7 @@ function setAutoLevel(on){
      v7.0 原生另开一路并行流自行解码，HLS(.m3u8) 解不了 → 弹「该格式暂不支持识别」。
      v7.1 改从 Web Audio 图直接采 PCM：HLS 经 hls.js/MSE 喂进 <audio>，
      MediaElementSource 一定采得到 → 单声道下混 → 16kHz 重采样 → 16-bit PCM，
-     base64 过桥（WatersNative.asrPcm）送原生 Vosk 流式识别。
+     base64 过桥（WatersNative.asrPcm）送原生 sherpa-onnx 流式识别。
      凡网页能播的源（HLS / ICY / https 直连）都支持；字幕与耳朵听到的是同一路
      音频，天然同步；也不再双倍消耗流量。 */
   var asrTap = null;   // {proc, mute, mono, p, prev, acc, accLen}
@@ -4807,7 +4805,7 @@ function bind(){
     applyFs(fsOn(), false);
   }
 
-  /* ---------- v7.0：语音字幕（仅支持的设备显示开关；由 APK 经 Vosk 提供识别） ---------- */
+  /* ---------- v8.0：语音字幕（仅支持的设备显示开关；由 APK 经 sherpa-onnx 提供识别） ---------- */
   const subItem = document.getElementById('subtitleItem');
   /* v7.2.1 修复：能力探测（asrAvailable）依赖原生桥就绪，而桥在 RadioPlaybackService
      的 asr 对象创建后才可用；页面启动初始化时该桥常未就绪 → 探测返回 false → 整项

@@ -42,38 +42,53 @@ jobs:
           mkdir -p android/app/src/main/assets
           cp app-web/index.html app-web/hls.min.js app-web/version.txt android/app/src/main/assets/
 
-      # v7.2：语音模型随 APK 内置（assets/vosk/*.zip）。装上即有、开字幕不联网。
-      # CI 下载 zip 只需几秒；用 cache 缓存避免每次构建重复下载。
-      # v7.8：只内置英文小模型（精简包）—— 中文 zip 移除（APK ~100MB→~56MB）；
-      # 基准实测 0.22-lgraph 手机上 RTF>1 会积压毁同步，small-0.15 即流式最优解。
-      # 恢复中文：把 vosk-model-small-cn-0.22.zip 加回 for 列表并更新 cache key。
-      - name: Cache Vosk models
+      # v8.0：sherpa-onnx AAR（含 arm64/armeabi 原生库）→ app/libs/，由 build.gradle
+      # 以 fileTree 引入。AAR 不在仓库内，CI 下载（约 50MB）。
+      - name: Fetch sherpa-onnx AAR
+        run: |
+          mkdir -p android/app/libs
+          AAR=android/app/libs/sherpa-onnx-1.13.8.aar
+          if [ ! -s "$AAR" ]; then
+            echo "Downloading sherpa-onnx AAR ..."
+            curl -fL --retry 5 --retry-delay 5 -o "$AAR" \
+              "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-1.13.8.aar"
+          else
+            echo "Existing AAR: $(stat -c%s "$AAR") bytes"
+          fi
+          s=$(stat -c%s "$AAR")
+          if [ "$s" -lt 40000000 ]; then echo "AAR TOO SMALL ($s)"; exit 1; fi
+          ls -la android/app/libs
+
+      # v8.0：流式 Zipformer 英文模型（int8）随 APK 内置 assets/asr/，开字幕不联网。
+      # 仅首次（cache 命中则跳过）下载 tar 并抽出 4 个文件。cache key 含模型名+版本。
+      - name: Cache sherpa asr model
         uses: actions/cache@v4
         with:
-          path: android/app/src/main/assets/vosk
-          key: vosk-models-small-en-us-0.15-only-v78
+          path: android/app/src/main/assets/asr
+          key: sherpa-zipformer-en-int8-streaming-2023-06-26-v80
 
-      - name: Bundle Vosk speech models (built-in, no download at runtime)
+      - name: Bundle sherpa asr model (built-in, no download at runtime)
         run: |
-          mkdir -p android/app/src/main/assets/vosk
-          cd android/app/src/main/assets/vosk
-          rm -f vosk-model-small-cn-0.22.zip   # v7.8：cache 里可能残留旧中文包，强制清除
-          for f in vosk-model-small-en-us-0.15.zip; do
-            if [ ! -s "$f" ]; then
-              echo "Downloading $f ..."
-              curl -fL --retry 5 --retry-delay 5 -o "$f" "https://alphacephei.com/vosk/models/$f"
-            else
-              echo "Cached: $f ($(stat -c%s "$f") bytes)"
-            fi
-          done
+          mkdir -p android/app/src/main/assets/asr
+          cd android/app/src/main/assets/asr
+          ENC="encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx"
+          DEC="decoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx"
+          JOIN="joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx"
+          if [ ! -s "$ENC" ] || [ ! -s tokens.txt ]; then
+            TAR="sherpa-onnx-streaming-zipformer-en-2023-06-26.tar.bz2"
+            BASE="https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models"
+            echo "Downloading $TAR ..."
+            curl -fL --retry 5 --retry-delay 5 -o "$TAR" "$BASE/$TAR"
+            P=sherpa-onnx-streaming-zipformer-en-2023-06-26
+            tar xjf "$TAR" --strip-components=1 \
+              "$P/$ENC" "$P/$DEC" "$P/$JOIN" "$P/tokens.txt"
+            rm -f "$TAR"
+          else
+            echo "Cached model files present"
+          fi
           ls -la
-          # 完整性粗检：内置模型应 >30MB
-          for f in *.zip; do
-            s=$(stat -c%s "$f")
-            if [ "$s" -lt 30000000 ]; then echo "MODEL TOO SMALL: $f ($s bytes)"; exit 1; fi
-          done
-          # v7.8：精简包断言 —— 不应存在中文模型
-          if [ -s vosk-model-small-cn-0.22.zip ]; then echo "CN MODEL SHOULD BE REMOVED"; exit 1; fi
+          if [ "$(stat -c%s "$ENC")" -lt 60000000 ]; then echo "ENCODER TOO SMALL"; exit 1; fi
+          if [ "$(stat -c%s tokens.txt)" -lt 1000 ]; then echo "TOKENS TOO SMALL"; exit 1; fi
 
       - name: Build Debug APK (auto-signed)
         uses: gradle/gradle-build-action@v3

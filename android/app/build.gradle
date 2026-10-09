@@ -17,14 +17,13 @@ android {
            API 14-20 只有实体键 onKeyDown 兜底。 */
         minSdk 14
         targetSdk 34
-        versionCode 17
-        versionName "7.9"
-    }
-
-    /* v7.2：语音模型 zip（assets/vosk/*.zip，共约 80MB）本身已是压缩格式，
-       AAPT2 不必再 deflate（白耗时、零收益）；assets 读取按原样流式解压 */
-    androidResources {
-        noCompress 'zip'
+        versionCode 18
+        versionName "8.0"
+        /* v8.0：sherpa-onnx AAR 含 arm64-v8a / armeabi-v7a / x86 / x86_64 四 ABI 的 .so。
+           只留真机两 ABI，砍掉 x86(-64) 省约 20MB（APK <100MB 红线）。 */
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     signingConfigs {
@@ -63,7 +62,7 @@ android {
 }
 
 dependencies {
-    /* v7.0：离线语音识别（Vosk）。纯 NDK + 轻量 Java 包装，不引入 AndroidX。
-       v7.2：模型 zip（英/中小模型）已内置 APK assets/vosk/，开箱即用、不联网。 */
-    implementation 'com.alphacephei:vosk-android:0.3.47'
+    /* v7.0~v7.9：Vosk；v8.0 起替换为 sherpa-onnx 流式 Zipformer（更快更准）。
+       AAR 由 CI 下载到 app/libs/（见 build-apk.yml），不在仓库内。 */
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
 }
