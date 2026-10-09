@@ -180,7 +180,7 @@ public class AsrController {
                 }
                 rec = recognizer;
             }
-            stream = rec.createStream();
+            stream = rec.createStream("");
 
             try {
                 while (!stop) {
@@ -192,7 +192,7 @@ public class AsrController {
                 }
                 /* 退出时把当前流定稿回传 */
                 if (stream != null) {
-                    String t = rec.getResult(stream);
+                    String t = rec.getResult(stream).getText();
                     if (t != null && !t.trim().isEmpty()) service.callAsrJs(t.trim(), true);
                 }
             } catch (Throwable t) {
@@ -205,10 +205,10 @@ public class AsrController {
             float[] floats = toFloat(pcm16k);
             st.acceptWaveform(floats, TARGET_RATE);
             while (rec.isReady(st)) rec.decode(st);
-            String partial = rec.getResult(st);
+            String partial = rec.getResult(st).getText();
             if (partial != null && !partial.trim().isEmpty()) service.callAsrJs(partial.trim(), false);
             if (rec.isEndpoint(st)) {
-                String fin = rec.getResult(st);
+                String fin = rec.getResult(st).getText();
                 if (fin != null && !fin.trim().isEmpty()) service.callAsrJs(fin.trim(), true);
                 rec.reset(st);
             }
@@ -218,7 +218,7 @@ public class AsrController {
         void renewStream() {
             if (recognizer == null) return;
             try { if (stream != null) recognizer.reset(stream); } catch (Throwable ignored) {}
-            stream = recognizer.createStream();
+            stream = recognizer.createStream("");
         }
     }
 
@@ -268,15 +268,14 @@ public class AsrController {
     }
 
     /* ---------------- 模型准备：确认 assets/asr/ 四件套就位（无需复制，AssetManager 直读） ----------------
-       v8 模型随 APK 内置在 assets/asr/，开箱即用、不联网；此处仅做存在性校验。 */
+       v8 模型随 APK 内置在 assets/asr/，开箱即用、不联网；此处仅做存在性校验。
+       用 open() 而非 openFd()——对压缩/未压缩资产都安全（build.gradle 已对 .onnx 设 noCompress）。 */
     private boolean prepareAssets() {
         String[] names = {ENC, DEC, JOIN, TOK};
         for (String nm : names) {
             try {
-                android.content.res.AssetFileDescriptor afd = appContext.getAssets().openFd("asr/" + nm);
-                long len = afd.getLength();
-                afd.close();
-                if (len < 1000) { Log.e(TAG, "模型过小: " + nm + " (" + len + ")"); return false; }
+                java.io.InputStream is = appContext.getAssets().open("asr/" + nm);
+                is.close();
             } catch (Throwable t) {
                 Log.e(TAG, "模型缺失: " + nm + " → " + t);
                 return false;
