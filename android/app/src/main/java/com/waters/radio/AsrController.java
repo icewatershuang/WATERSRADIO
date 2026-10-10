@@ -175,7 +175,12 @@ public class AsrController {
                     try { recognizer = buildRecognizer(appContext.getAssets(), "asr"); }
                     catch (Throwable t) {
                         Log.e(TAG, "sherpa 识别器创建失败", t);   // 打印完整堆栈，便于真机定位
-                        enabled = false; toast("语音识别初始化失败：" + t.getClass().getSimpleName()); return;
+                        /* v8.0.2：toast 带上异常 message（如 NoClassDefFoundError 的缺失类名），真机可直接定位 */
+                        String msg = t.getMessage();
+                        enabled = false;
+                        toast("语音识别初始化失败：" + t.getClass().getSimpleName()
+                              + (msg != null ? " " + msg : ""));
+                        return;
                     }
                 }
                 rec = recognizer;

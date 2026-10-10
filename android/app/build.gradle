@@ -17,8 +17,8 @@ android {
            API 14-20 只有实体键 onKeyDown 兜底。 */
         minSdk 14
         targetSdk 34
-        versionCode 19
-        versionName "8.0.1"
+        versionCode 20
+        versionName "8.0.2"
         /* v8.0：sherpa-onnx AAR 含 arm64-v8a / armeabi-v7a / x86 / x86_64 四 ABI 的 .so。
            只留真机两 ABI，砍掉 x86(-64) 省约 20MB（APK <100MB 红线）。 */
         ndk {
@@ -68,6 +68,11 @@ android {
 
 dependencies {
     /* v7.0~v7.9：Vosk；v8.0 起替换为 sherpa-onnx 流式 Zipformer（更快更准）。
-       AAR 由 CI 下载到 app/libs/（见 build-apk.yml），不在仓库内。 */
+       AAR 由 CI 下载到 app/libs/（见 build-apk.yml），不在仓库内。
+       v8.0.2：sherpa-onnx AAR 的类是 Kotlin 编译的，运行时需要 kotlin-stdlib
+       （91 个类调用 Intrinsics.checkNotNullParameter 等）。⚠️ fileTree 引 AAR 不会
+       解析 pom 传递依赖，纯 Java 工程也没有 Kotlin 插件自动注入 → v8.0/v8.0.1 真机
+       开字幕即抛 NoClassDefFoundError: kotlin.jvm.internal.Intrinsics。显式补上。 */
     implementation fileTree(dir: 'libs', include: ['*.aar'])
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.24'
 }
