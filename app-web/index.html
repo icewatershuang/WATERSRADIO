@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v8.0.2</title>
+<title>WATERS RADIO · v8.0.3</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1572,8 +1572,24 @@
   /* v49：≤359px 窄机竖屏——一行装不下「圆盘|台名|1.3×时钟」（时钟 DSEG7 实测 ~148px），
      强制台名列 min-width:120px，时钟放不下就整行换到第二行右对齐（.screen-main 本就 flex-wrap:wrap），
      台名不再被挤成一字一行 */
+  /* v8.0.3：上面 v49 的 min-width:120 在「固定屏高 + 底部语音字幕带」的新结构下成了重叠元凶——
+     行宽 313px（≈353 机型）装不下「盘54+距9+120+距9+时钟~125」→ 时钟被挤到 .screen-row 第二行
+     （+18px 行距 +45px 时钟高），行可收缩（min-height:0）又无 overflow:hidden → 溢出的日期/时钟
+     直接压到底部字幕上（用户截图实证；台名 2 行时溢出 36px 最重，1 行名也有 11px 擦边）。
+     改回 min-width:0（.screen-info 本就 flex-basis:0%，时钟任何宽度都不再换行、日期恒贴行底
+     =字幕上方）；台名防挤改由 line-clamp:2+省略号+字号再收一档（22→19）承担。 */
+  /* v8.0.3：min-width:120 在「固定屏高 + 底部语音字幕带」结构下成了重叠元凶——窄机行宽装不下
+     「圆盘+台名+时钟」单行 → 时钟被挤到 .screen-row 第二行（+行距+时钟高），行可收缩又无
+     overflow:hidden → 溢出的日期/时钟直接压到底部字幕上（用户截图实证，台名 2 行时最重）。
+     修复：**min-width 归零 + 时钟改绝对定位**——钉在行右下（与旧版换行落点同位、日期仍贴行底，
+     layoutIcyInset 量的是实际矩形，ICY 对齐逻辑不变）；信息列拿回全部剩余宽度
+     （≈353 机型 74→163px，短台名恢复完整显示）。52px 底衬垫把信息列文字清出时钟带
+     （时钟高 ≈45px），文字与时钟永不互相压字；行内只剩圆盘+信息列一行，任何宽度都不再换行，
+     固定屏高 228 内恒不溢出。台名防挤由 line-clamp:2+省略号+字号收一档（22→19）兜底。 */
   @media (orientation:portrait) and (max-width:359px){
-    .screen-info{min-width:120px}
+    .screen-info{min-width:0;padding-bottom:52px}
+    .np-name{font-size:19px}
+    .lcd-clock{position:absolute;right:0;bottom:0;margin-left:0}
   }
 
   /* ========== 窄屏竖屏：标题按视口线性收字号（在「不折行、不压设置键」前提下尽量大） ==========
@@ -1764,7 +1780,10 @@
 
   /* ── 窄手机横屏（≤700px 宽）双栏：左列更窄，台名列保底 120px，
      时钟放不下就在 .screen-row 内换行到下一行右侧（与竖屏 ≤359 的规则同理），
-     避免台名被挤成一字一行竖排（实测 667x375）── */
+     避免台名被挤成一字一行竖排（实测 667x375）──
+     （v8.0.3 曾试改 min-width:0，实测横屏 .lcd-clock 的 margin-left:auto 会吸干富余、
+     信息列塌到 12px 台名只剩一字 —— 横屏本无重叠 bug（667 实测时钟不换行、字幕余量 54px+），
+     撤销，维持 120px 保底。） */
   @media (orientation:landscape) and (max-height:620px) and (max-width:700px){
     .screen-info{min-width:120px}
   }
