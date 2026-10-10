@@ -174,8 +174,8 @@ public class AsrController {
                 if (recognizer == null) {
                     try { recognizer = buildRecognizer(appContext.getAssets(), "asr"); }
                     catch (Throwable t) {
-                        Log.e(TAG, "sherpa 识别器创建失败: " + t);
-                        enabled = false; toast("语音识别初始化失败"); return;
+                        Log.e(TAG, "sherpa 识别器创建失败", t);   // 打印完整堆栈，便于真机定位
+                        enabled = false; toast("语音识别初始化失败：" + t.getClass().getSimpleName()); return;
                     }
                 }
                 rec = recognizer;

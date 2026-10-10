@@ -59,6 +59,14 @@ jobs:
           if [ "$s" -lt 40000000 ]; then echo "AAR TOO SMALL ($s)"; exit 1; fi
           ls -la android/app/libs
 
+      # v8.0.1 修复：sherpa AAR 内置 libonnxruntime.so 的 ELF .note.android min SDK = 27，
+      # Android < 8.1（API 27）设备加载该库会被 linker 拒绝
+      #（"has min SDK version 27 but the device is XX"）→ 字幕初始化失败。
+      # 该库实际仅依赖 API 1/23 级 libc 符号，把注记降到 21（与同包 sherpa 库及 app
+      # minSdk 对齐）即可在 API 21+ 正常加载。
+      - name: Patch onnxruntime min SDK (27 -> 21)
+        run: python3 _tools/patch_onnx_minapi.py android/app/libs/sherpa-onnx-1.13.8.aar
+
       # v8.0：流式 Zipformer 英文模型（int8）随 APK 内置 assets/asr/，开字幕不联网。
       # 仅首次（cache 命中则跳过）下载 tar 并抽出 4 个文件。cache key 含模型名+版本。
       - name: Cache sherpa asr model
