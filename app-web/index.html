@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v8.0.5</title>
+<title>WATERS RADIO · v8.0.6</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -218,7 +218,7 @@
     text-shadow:none;
   }
   html[data-theme="mono"] .np-name{ text-shadow:none; }
-  html[data-theme="mono"] .lcd-clock{ border-left-color:rgba(0,0,0,.35); }
+  /* v8.0.6：时钟竖分隔线已删，mono 主题的 border-left-color 覆盖一并移除 */
   /* v52：左下 ICY 两行块跟随黑白线稿 */
   html[data-theme="mono"] .np-icy{ color:#000 !important; text-shadow:none; }
   /* 底栏字形图标与状态小点也去饱和（兜底，防将来再引入彩色字形） */
@@ -590,7 +590,8 @@
     flex-shrink:0;align-self:center;
     display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
     gap:6px;padding-left:12px;margin-left:auto;   /* v51：时间↔日期间隔 3→6（×2） */
-    border-left:1px solid rgba(255,180,85,.22);
+    /* v8.0.6：去掉时钟左侧竖向分隔线（用户反馈横竖屏都不要）——
+       原 border-left:1px solid rgba(255,180,85,.22) 已删，padding-left 保留作信息区间距 */
     position:relative;z-index:1;
   }
   /* 数字容器：v44 起改用 DSEG7 七段数码管字体（内联子集），呈老式 LED 段码样式 */
