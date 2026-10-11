@@ -9,7 +9,7 @@ android {
     defaultConfig {
         /* v7.0 起独立安装：applicationId 与 v6x（com.waters.radio）不同 → 两个 App 可并存，
            互不覆盖、互不顶替。namespace 仍为 com.waters.radio（R 类 / JsBridge 全兼容）。 */
-        applicationId "com.waters.radio.v7"
+        applicationId "com.waters.radio.v9"
         /* minSdk 14 = Android 4.0（满足「装得上」）。
            ⚠️ 4.0~4.3 的系统 WebView 跑不动现代网页（无 HLS / CSS Grid），
            装上会白屏；实际可用的最低版本是 Android 5.0（API 21）。
@@ -17,8 +17,8 @@ android {
            API 14-20 只有实体键 onKeyDown 兜底。 */
         minSdk 14
         targetSdk 34
-        versionCode 24
-        versionName "8.0.6"
+        versionCode 25
+        versionName "9.1"
         /* v8.0：sherpa-onnx AAR 含 arm64-v8a / armeabi-v7a / x86 / x86_64 四 ABI 的 .so。
            只留真机两 ABI，砍掉 x86(-64) 省约 20MB（APK <100MB 红线）。 */
         ndk {
