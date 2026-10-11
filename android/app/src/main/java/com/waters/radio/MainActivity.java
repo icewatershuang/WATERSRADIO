@@ -149,6 +149,15 @@ public class MainActivity extends Activity {
         instance.runOnUiThread(() -> applyImmersive(instance, on));
     }
 
+    /* v9.1：纯净全屏模式方向锁 —— 网页选竖屏/横屏 → 锁死对应方向；选 auto → 恢复传感器跟随。
+       必须在 UI 线程调 setRequestedOrientation（与 setImmersiveMode 同类做法）。 */
+    static void setOrientation(final int orientation) {
+        if (instance == null) return;
+        instance.runOnUiThread(() -> {
+            try { instance.setRequestedOrientation(orientation); } catch (Throwable ignored) {}
+        });
+    }
+
     static void applyImmersive(final Activity act, final boolean on) {
         try {
             final android.view.Window w = act.getWindow();
