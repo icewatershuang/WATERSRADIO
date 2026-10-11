@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="WATERS RADIO" />
 <!-- 构建号：iPhone/安卓浏览器标题栏会显示，用于随时确认手机上打开的是哪一版
      （GitHub Pages 对 HTML 有 Cache-Control: max-age=600，改版后 10 分钟内可能仍是旧缓存） -->
-<title>WATERS RADIO · v8.0.3</title>
+<title>WATERS RADIO · v8.0.4</title>
 <style>
   /* ===== 基础重置（整套视觉由下方奶油白设计系统提供） ===== */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -547,15 +547,25 @@
     color:var(--lcd-glow);font-size:13.5px;line-height:1.55;letter-spacing:.01em;
   }
   .np-subtitle.show{display:block}
+  /* v8.0.4：字幕滚动改为「超宽钉尾部」确定性滚动（见 renderSubtitle 的 scrollLeft 跟随），
+     不再用无限跑马灯——流式 partial 每 ~200ms 刷新一次，旧方案 padding-left:100% + 22s 动画
+     会在文本替换时位移基准重算导致跳变/「从中间开始」。超宽时最新词贴右缘、旧词向左滑出，
+     阅读连贯；不超宽则左对齐，零跳动。 */
   .np-subtitle .sub-mq{overflow:hidden;white-space:nowrap}
+  /* v8.0.4：仅当超宽滚动时启用边缘渐隐（左右各 5%），避免尾部钉位把首词硬切出毛边；
+     短句不滚动则不加遮罩，起始字符保持清晰 */
+  .np-subtitle .sub-mq.flow{
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
+  }
   .np-subtitle .sub-track{
-    display:inline-block;padding-left:100%;
-    animation:subScroll 22s linear infinite;
+    display:inline-block;
     font-weight:500;text-shadow:0 0 7px rgba(255,180,85,.35);
+    text-transform:lowercase;      /* v8.0.4：字幕全小写 */
+    letter-spacing:.01em;
   }
   /* 流式听写中（partial）半亮，整句定稿（final）全亮 —— "LCD 扫描定影"感 */
   .np-subtitle .sub-track.part{opacity:.55}
-  @keyframes subScroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
   /* 横屏双栏垂直稀缺：字号收一档 */
   @media (orientation:landscape){
     .np-subtitle .sub-track{font-size:12.5px}
@@ -4149,9 +4159,18 @@ function setAutoLevel(on){
       curEl = box.querySelector('.sub-track');
     }
     if(asrCur){
-      curEl.textContent = asrCur + '\u3000\u3000·\u3000\u3000' + asrCur;
+      /* v8.0.4：只显示一次当前识别文本（旧版 asrCur+分隔符+asrCur 把整句重复拼接，
+         流式累计 partial 下表现为「重复半句再接新词」，已废弃） */
+      curEl.textContent = asrCur;
       curEl.classList.toggle('part', !asrCurFinal);
       box.classList.add('show');
+      /* 超宽钉尾部：文本宽于容器时把最新词贴右缘，旧词向左滑出，阅读连贯、无跳变；
+         不超宽则左对齐。每帧文本替换后同步一次即可。 */
+      var mq = curEl.parentNode;
+      if(mq){
+        mq.scrollLeft = (curEl.scrollWidth > mq.clientWidth) ? (curEl.scrollWidth - mq.clientWidth) : 0;
+        mq.classList.toggle('flow', curEl.scrollWidth > mq.clientWidth);
+      }
     } else if(asrListening){
       curEl.textContent = '\u00b7\u00b7\u00b7\u3000\u8bed\u97f3\u8bc6\u522b\u4e2d\u3000\u00b7\u00b7\u00b7';
       curEl.classList.add('part');
