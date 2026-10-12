@@ -5496,13 +5496,13 @@ function bind(){
      双击检测用 click 计时（移动端 dblclick 不总触发），齿轮键除外 */
   (function(){
     const fsEl = document.getElementById('fsScreen'); if(!fsEl) return;
-    let lastTap = 0;
+    let lastTap = 0, lastToggle = 0;
     fsEl.addEventListener('click', function(e){
       if(e.target && e.target.closest && e.target.closest('#fsExit')) return;
       const now = Date.now();
       if(now - lastTap < 320){
         lastTap = 0;
-        try{ togglePlay(); }catch(err){}
+        if(now - lastToggle > 400){ lastToggle = now; try{ togglePlay(); }catch(err){} }   /* 防抖：一次双击只切一次 */
       }else{
         lastTap = now;
       }
@@ -5577,13 +5577,13 @@ function bind(){
   (function(){
     const stage = document.querySelector('#v9App .v9-stage');
     if(!stage) return;
-    let lastTap = 0;
+    let lastTap = 0, lastToggle = 0;
     stage.addEventListener('click', function(e){
       if(e.target && e.target.closest && e.target.closest('button, a, .featured-chip, .v9-gear')) return;
       const now = Date.now();
       if(now - lastTap < 320){
         lastTap = 0;
-        try{ togglePlay(); }catch(err){}
+        if(now - lastToggle > 400){ lastToggle = now; try{ togglePlay(); }catch(err){} }   /* 防抖：一次双击只切一次 */
       } else {
         lastTap = now;
       }
