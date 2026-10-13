@@ -491,6 +491,35 @@ public class RadioPlaybackService extends Service {
             try { MainActivity.setImmersiveMode("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
         }
 
+        /* v9.1：纯净全屏模式方向锁 —— 网页选竖屏/横屏/auto → 锁死/恢复传感器跟随。
+           mode: "portrait" | "landscape" | 其它(含 "auto"/空) → SCREEN_ORIENTATION_UNSPECIFIED。 */
+        @android.webkit.JavascriptInterface
+        public void setOrientation(String mode) {
+            try {
+                int o;
+                if ("portrait".equals(mode)) {
+                    o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                } else if ("landscape".equals(mode)) {
+                    o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                } else {
+                    o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+                }
+                MainActivity.setOrientation(o);
+            } catch (Throwable ignored) {}
+        }
+
+        /* v9.1.2：屏幕常亮开关 —— 网页「屏幕常亮」开关 / 首次引导开启 */
+        @android.webkit.JavascriptInterface
+        public void setKeepScreenOn(String on) {
+            try { MainActivity.setKeepScreenOnMode("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
+        }
+
+        /* v9.1.2：跳本应用系统设置页（引导关闭电池优化） */
+        @android.webkit.JavascriptInterface
+        public void openAppSettings() {
+            try { MainActivity.openAppSettings(); } catch (Throwable ignored) {}
+        }
+
         /*/* ---- v8.0：语音识别字幕（离线 sherpa-onnx）----
            网页「语音字幕」开关 / 语言选择 → 原生启动识别线程，结果经 window.__onAsr
            回传主页字幕层。能力不满足时 asrAvailable() 返回 false，网页端整项隐藏。
