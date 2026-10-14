@@ -149,6 +149,38 @@ public class MainActivity extends Activity {
         instance.runOnUiThread(() -> applyImmersive(instance, on));
     }
 
+    /* v9.1：纯净全屏模式方向锁 —— 网页选竖屏/横屏 → 锁死对应方向；选 auto → 恢复传感器跟随。
+       必须在 UI 线程调 setRequestedOrientation（与 setImmersiveMode 同类做法）。 */
+    static void setOrientation(final int orientation) {
+        if (instance == null) return;
+        instance.runOnUiThread(() -> {
+            try { instance.setRequestedOrientation(orientation); } catch (Throwable ignored) {}
+        });
+    }
+
+    /* v9.1.2：屏幕常亮（FLAG_KEEP_SCREEN_ON）—— 网页「屏幕常亮」开关 / 首次引导开启 */
+    static void setKeepScreenOnMode(final boolean on) {
+        if (instance == null) return;
+        instance.runOnUiThread(() -> {
+            try {
+                final android.view.Window w = instance.getWindow();
+                if (on) w.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                else w.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } catch (Throwable ignored) {}
+        });
+    }
+
+    /* v9.1.2：引导用户到本应用系统设置页（关闭电池优化 / 设为无限制，实现「阻止休眠」） */
+    static void openAppSettings() {
+        if (instance == null) return;
+        try {
+            Intent i = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            i.setData(android.net.Uri.parse("package:" + instance.getPackageName()));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            instance.startActivity(i);
+        } catch (Exception ignored) {}
+    }
+
     static void applyImmersive(final Activity act, final boolean on) {
         try {
             final android.view.Window w = act.getWindow();
