@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 启动图标自适应背景：水蓝深青（v7 独立版专属配色，与 v6x 的奶白一眼区分） -->
-    <color name="ic_launcher_background">#0E7490</color>
+    <!-- 启动图标自适应背景：近黑（v9 纯净全屏/黑白收音机专属，与 v7 深青一眼区分） -->
+    <color name="ic_launcher_background">#0B0B0B</color>
 </resources>
