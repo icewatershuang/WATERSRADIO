@@ -50,6 +50,9 @@ public class RadioPlaybackService extends Service {
     /* v8.0：语音识别字幕控制器（离线 sherpa-onnx） */
     private AsrController asr;
 
+    /* v9.1.21：本地流式代理（127.0.0.1）—— 给 Web Audio 干净 CORS 音频，修复英文字幕不出 */
+    private LocalProxyServer localProxy;
+
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
     private MediaSession mediaSession;    /* API 21+ */
@@ -74,6 +77,8 @@ public class RadioPlaybackService extends Service {
         sAppContext = getApplicationContext();
         sInstance = this;
         asr = new AsrController(this);   /* v7.0：离线语音识别（按设备能力开启） */
+        localProxy = new LocalProxyServer();   /* v9.1.21：本地流式代理（修复英文字幕不出） */
+        localProxy.start();
         createChannel();
         if (Build.VERSION.SDK_INT >= 21) setupMediaSession();
         acquireLocks();
@@ -105,6 +110,7 @@ public class RadioPlaybackService extends Service {
     public void onDestroy() {
         stopIcy();
         if (asr != null) asr.release();   /* v8.0：释放 sherpa 识别器 */
+        if (localProxy != null) localProxy.stop();   /* v9.1.21：停本地代理 */
         sInstance = null;
         releaseLocks();
         if (mediaSession != null) {
@@ -435,6 +441,17 @@ public class RadioPlaybackService extends Service {
         @android.webkit.JavascriptInterface
         public boolean isApp() { return true; }
 
+        /* v9.1.21：本地流式代理基址（http://127.0.0.1:PORT/stream?u=）；
+           未启动/非 APK 返回空串。网页据此把直连流包一层，给 Web Audio 干净 CORS 音频。 */
+        @android.webkit.JavascriptInterface
+        public String localProxyBase() {
+            if (sInstance != null && sInstance.localProxy != null) {
+                String b = sInstance.localProxy.getBaseUrl();
+                if (b != null) return b;
+            }
+            return "";
+        }
+
         @android.webkit.JavascriptInterface
         public void onNowPlaying(String json) {
             try {
@@ -489,6 +506,35 @@ public class RadioPlaybackService extends Service {
         @android.webkit.JavascriptInterface
         public void setImmersive(String on) {
             try { MainActivity.setImmersiveMode("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
+        }
+
+        /* v9.1：纯净全屏模式方向锁 —— 网页选竖屏/横屏/auto → 锁死/恢复传感器跟随。
+           mode: "portrait" | "landscape" | 其它(含 "auto"/空) → SCREEN_ORIENTATION_UNSPECIFIED。 */
+        @android.webkit.JavascriptInterface
+        public void setOrientation(String mode) {
+            try {
+                int o;
+                if ("portrait".equals(mode)) {
+                    o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                } else if ("landscape".equals(mode)) {
+                    o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                } else {
+                    o = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+                }
+                MainActivity.setOrientation(o);
+            } catch (Throwable ignored) {}
+        }
+
+        /* v9.1.2：屏幕常亮开关 —— 网页「屏幕常亮」开关 / 首次引导开启 */
+        @android.webkit.JavascriptInterface
+        public void setKeepScreenOn(String on) {
+            try { MainActivity.setKeepScreenOnMode("1".equals(on) || "true".equals(on)); } catch (Throwable ignored) {}
+        }
+
+        /* v9.1.2：跳本应用系统设置页（引导关闭电池优化） */
+        @android.webkit.JavascriptInterface
+        public void openAppSettings() {
+            try { MainActivity.openAppSettings(); } catch (Throwable ignored) {}
         }
 
         /*/* ---- v8.0：语音识别字幕（离线 sherpa-onnx）----
